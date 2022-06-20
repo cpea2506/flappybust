@@ -1,0 +1,3 @@
+struct Score {
+    value: usize,
+}
