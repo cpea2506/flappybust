@@ -1,4 +1,4 @@
-# flappycrab
+# flappybust
 🦀🦋
 
 ### Todo
