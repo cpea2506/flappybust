@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use flappybust::Math;
 
 #[derive(Component, Default)]
 pub struct Base {
@@ -7,9 +8,9 @@ pub struct Base {
 }
 
 impl Base {
-    fn new(translation: Vec3, secondary: bool) -> Self {
+    fn new(x: f32, y: f32, secondary: bool) -> Self {
         Base {
-            translation,
+            translation: Vec3::new(x, y, 0.2),
             secondary,
         }
     }
@@ -22,26 +23,12 @@ impl Base {
         336.
     }
 
-    pub fn startup_system(
-        mut commands: Commands,
-        asset_server: Res<AssetServer>,
-        window: Res<Windows>,
-    ) {
+    pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, window: Res<Windows>) {
         let window = window.get_primary().unwrap();
         let texture = asset_server.load("images/base.png");
 
-        let base = Base::new(
-            Vec3::new(0., Base::height() / 2. - window.height() / 2., 0.1),
-            false,
-        );
-        let secondary_base = Base::new(
-            Vec3::new(
-                Base::width(),
-                Base::height() / 2. - window.height() / 2.,
-                0.1,
-            ),
-            true,
-        );
+        let base = Base::new(0., Base::height().half() - window.height().half(), false);
+        let secondary_base = Base::new(Base::width(), base.translation.y, true);
 
         commands
             .spawn_bundle(SpriteBundle {
@@ -59,8 +46,8 @@ impl Base {
             .insert(secondary_base);
     }
 
-    pub fn moving_system(mut query: Query<(&mut Base, &mut Transform)>) {
-        for (mut base, mut transform) in query.iter_mut() {
+    pub fn moving(mut base: Query<(&mut Base, &mut Transform)>) {
+        for (mut base, mut transform) in base.iter_mut() {
             base.translation.x = (base.translation.x - 1.) % 312.;
 
             transform.translation.x = base.translation.x + if base.secondary { 312. } else { 0. };

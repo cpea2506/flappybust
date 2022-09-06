@@ -1,6 +1,4 @@
-use bevy::prelude::Component;
-
-#[derive(Component, Default)]
+#[derive(Default)]
 struct Score {
     value: usize,
 }
