@@ -47,7 +47,7 @@ impl Base {
     }
 
     pub fn moving(mut base: Query<(&mut Base, &mut Transform)>) {
-        for (mut base, mut transform) in base.iter_mut() {
+        for (mut base, mut transform) in &mut base {
             base.translation.x = (base.translation.x - 1.) % 312.;
 
             transform.translation.x = base.translation.x + if base.secondary { 312. } else { 0. };

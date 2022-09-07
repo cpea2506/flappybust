@@ -37,7 +37,7 @@ impl Background {
     }
 
     pub fn moving(mut background: Query<(&mut Background, &mut Transform)>) {
-        for (mut background, mut transform) in background.iter_mut() {
+        for (mut background, mut transform) in &mut background {
             background.x = (background.x - 1.) % 288.;
 
             transform.translation.x = background.x + if background.secondary { 288. } else { 0. };

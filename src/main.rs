@@ -38,8 +38,8 @@ fn main() {
 
     app.insert_resource(default_window)
         .add_plugins(DefaultPlugins)
+        .add_loopless_state(GameState::Ready)
         .add_plugin(StartupPlugin)
-        .add_loopless_state(GameState::Ready) // add initial game state
         .add_plugin(PlayingPlugin) // in playing state
         .add_system(keyboard_input_system) // event trigger on keyboard input
         .add_system(close_on_esc)
@@ -54,12 +54,13 @@ impl Plugin for PlayingPlugin {
         app.add_system_set(
             ConditionSet::new()
                 .run_in_state(GameState::Playing)
-                .with_system(Background::moving)
                 .with_system(Base::moving)
-                .with_system(Bird::flap)
+                .with_system(Background::moving)
                 .with_system(Pipe::moving)
+                .with_system(Bird::flap)
                 .into(),
-        );
+        )
+        .add_system(Bird::flap.run_in_state(GameState::Over));
     }
 }
 
@@ -67,9 +68,9 @@ impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(startup_system)
             .add_startup_system_to_stage(StartupStage::PreStartup, DateTime::spawn)
+            .add_startup_system(Base::spawn)
             .add_startup_system(Background::spawn)
             .add_startup_system(StartMessage::spawn)
-            .add_startup_system(Base::spawn)
             .add_startup_system(Bird::spawn)
             .add_startup_system(Pipe::spawn);
     }
@@ -96,9 +97,7 @@ fn keyboard_input_system(
             }
             GameState::Over => {
                 // change game state to ready
-                commands.insert_resource(NextState(GameState::Ready));
-
-                StartMessage::spawn(commands, asset_server);
+                commands.insert_resource(NextState(GameState::Over));
             }
             GameState::Playing => {
                 // game state is still playing

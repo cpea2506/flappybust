@@ -3,13 +3,14 @@ use bevy::{
     prelude::*,
 };
 use flappybust::Math;
+use itertools::Itertools;
 use iyes_loopless::state::{CurrentState, NextState};
 use rand::{
     distributions::{Distribution, Standard},
     random,
 };
 
-use crate::{base::Base, GameState};
+use crate::{base::Base, pipe::Pipe, GameState};
 
 #[derive(Default)]
 pub struct FlapTimer(f32);
@@ -74,41 +75,60 @@ impl Bird {
     pub fn flap(
         mut commands: Commands,
         mut timer: ResMut<FlapTimer>,
-        windows: Res<Windows>,
         asset_server: Res<AssetServer>,
         keyboard_input: Res<Input<KeyCode>>,
-        mut bird: Query<(&mut Bird, &mut Handle<Image>, &mut Transform), With<Bird>>,
+        windows: Res<Windows>,
+        game_state: Res<CurrentState<GameState>>,
+        mut bird: Query<(&mut Bird, &mut Handle<Image>, &mut Transform)>,
+        pipe: Query<&Transform, (With<Pipe>, Without<Bird>)>,
     ) {
         let window = windows.get_primary().unwrap();
+        let (mut bird, mut texture, mut bird_transform) = bird.single_mut();
+        // let state = match timer.0 as usize % 3 {
+        //     0 => "mid",
+        //     1 => "up",
+        //     _ => "down",
+        // };
 
-        for (mut bird, mut texture, mut transform) in bird.iter_mut() {
-            let state = match timer.0 as usize % 3 {
-                0 => "mid",
-                1 => "up",
-                _ => "down",
-            };
+        // *texture = asset_server.load(&format!("images/{:?}bird-{state}flap.png", bird.color));
+        bird.speed.y += 0.1;
 
-            *texture = asset_server.load(&format!("images/{:?}bird-{state}flap.png", bird.color));
-
-            transform.translation.y -= bird.speed.y;
-
+        if game_state.0 == GameState::Playing {
             if keyboard_input.pressed(KeyCode::Space) {
                 bird.speed.y = -2.5;
-            } else {
-                bird.speed.y += 0.1;
             }
 
-            // change game state to over if collapsed with base
-            let bird_collapsed_position =
-                Base::height() + Bird::height().half() - window.height().half();
-
-            if transform.translation.y <= bird_collapsed_position {
-                transform.translation.y = bird_collapsed_position;
-
-                commands.insert_resource(NextState(GameState::Over));
+            // collapsed with pipe
+            for (pipe_transform, flipped_pipe_transform) in pipe.iter().tuples() {
+                if bird_transform.translation.x + Bird::width().half()
+                    >= pipe_transform.translation.x - Pipe::width().half()
+                    && bird_transform.translation.x - Bird::width().half()
+                        <= pipe_transform.translation.x + Pipe::width().half()
+                {
+                    if bird_transform.translation.y - Bird::height().half()
+                        <= pipe_transform.translation.y + Pipe::height().half()
+                        || bird_transform.translation.y + Bird::height().half()
+                            >= flipped_pipe_transform.translation.y - Pipe::height().half()
+                    {
+                        commands.insert_resource(NextState(GameState::Over));
+                        break;
+                    }
+                }
             }
         }
 
-        // timer.0 += 1;
+        bird_transform.translation.y -= bird.speed.y;
+
+        // collapsed with base
+        let base_collapsed_position =
+            Base::height() + Bird::height().half() - window.height().half();
+
+        if bird_transform.translation.y <= base_collapsed_position {
+            bird_transform.translation.y = base_collapsed_position;
+
+            if game_state.0 == GameState::Playing {
+                commands.insert_resource(NextState(GameState::Over));
+            }
+        }
     }
 }

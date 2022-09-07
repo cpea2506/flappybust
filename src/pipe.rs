@@ -29,16 +29,12 @@ impl Pipe {
         Pipe { entity, ..self }
     }
 
-    fn height() -> f32 {
+    pub fn height() -> f32 {
         320.
     }
 
-    fn width() -> f32 {
+    pub fn width() -> f32 {
         52.
-    }
-
-    fn gap() -> f32 {
-        400.
     }
 
     fn texture(asset_server: &AssetServer, datetime: &DateTime) -> Handle<Image> {
@@ -56,7 +52,8 @@ impl Pipe {
     }
 
     fn generate_pipes(commands: &mut Commands, texture: &Handle<Image>, pipe: Pipe) {
-        let flipped_pipe = Pipe::new(pipe.translation.x, pipe.translation.y + Pipe::gap());
+        let mut gap = 400.;
+        let flipped_pipe = Pipe::new(pipe.translation.x, pipe.translation.y + gap);
 
         commands
             .spawn_bundle(SpriteBundle {
