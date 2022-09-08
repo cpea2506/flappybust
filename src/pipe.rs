@@ -1,32 +1,23 @@
-use std::{thread::sleep, time::Duration};
-
 use crate::{base::Base, DateTime};
-use bevy::{prelude::*, transform};
+use bevy::prelude::*;
 use flappybust::Math;
-use rand::{
-    distributions::{Distribution, Uniform},
-    rngs::ThreadRng,
-    thread_rng,
-};
-
-use crate::GameState;
+use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
 
 #[derive(Component)]
 pub struct Pipe {
     pub translation: Vec3,
-    entity: Option<Entity>,
+}
+
+pub struct Pipes {
+    pipe: Pipe,
+    flipped_pipe: Pipe,
 }
 
 impl Pipe {
     fn new(x: f32, y: f32) -> Self {
         Pipe {
             translation: Vec3::new(x, y, 0.1),
-            entity: None,
         }
-    }
-
-    fn insert_entity(self, entity: Option<Entity>) -> Self {
-        Pipe { entity, ..self }
     }
 
     pub fn height() -> f32 {
@@ -52,7 +43,7 @@ impl Pipe {
     }
 
     fn generate_pipes(commands: &mut Commands, texture: &Handle<Image>, pipe: Pipe) {
-        let mut gap = 400.;
+        let gap = 400.;
         let flipped_pipe = Pipe::new(pipe.translation.x, pipe.translation.y + gap);
 
         commands

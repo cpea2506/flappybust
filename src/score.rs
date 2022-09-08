@@ -1,4 +1,4 @@
 #[derive(Default)]
 struct Score {
-    value: usize,
+    _value: usize,
 }

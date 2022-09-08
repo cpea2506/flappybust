@@ -16,15 +16,13 @@ use iyes_loopless::prelude::*;
 use pipe::Pipe;
 use start_message::StartMessage;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameState {
     Ready,
     Pausing,
     Playing,
     Over,
 }
-
-pub const FPS: f32 = 1. / 60.;
 
 fn main() {
     let mut app = App::new();
@@ -41,7 +39,7 @@ fn main() {
         .add_loopless_state(GameState::Ready)
         .add_plugin(StartupPlugin)
         .add_plugin(PlayingPlugin) // in playing state
-        .add_system(keyboard_input_system) // event trigger on keyboard input
+        .add_system(input_system) // event trigger on keyboard input
         .add_system(close_on_esc)
         .run();
 }
@@ -57,16 +55,17 @@ impl Plugin for PlayingPlugin {
                 .with_system(Base::moving)
                 .with_system(Background::moving)
                 .with_system(Pipe::moving)
+                .with_system(Bird::fly)
                 .with_system(Bird::flap)
                 .into(),
         )
-        .add_system(Bird::flap.run_in_state(GameState::Over));
+        .add_system(Bird::fly.run_in_state(GameState::Over));
     }
 }
 
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(startup_system)
+        app.add_startup_system(setup_camera)
             .add_startup_system_to_stage(StartupStage::PreStartup, DateTime::spawn)
             .add_startup_system(Base::spawn)
             .add_startup_system(Background::spawn)
@@ -76,18 +75,18 @@ impl Plugin for StartupPlugin {
     }
 }
 
-fn startup_system(mut commands: Commands) {
+fn setup_camera(mut commands: Commands) {
     commands.spawn_bundle(Camera2dBundle::default());
 }
 
-fn keyboard_input_system(
+fn input_system(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboards: Res<Input<KeyCode>>,
+    buttons: Res<Input<MouseButton>>,
     game_state: Res<CurrentState<GameState>>,
     start_message: Query<Entity, With<StartMessage>>,
 ) {
-    if keyboard_input.pressed(KeyCode::Space) {
+    if keyboards.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
         match game_state.0 {
             GameState::Ready => {
                 commands.entity(start_message.single()).despawn();
@@ -95,14 +94,8 @@ fn keyboard_input_system(
                 // change game state to playing
                 commands.insert_resource(NextState(GameState::Playing));
             }
-            GameState::Over => {
-                // change game state to ready
-                commands.insert_resource(NextState(GameState::Over));
-            }
-            GameState::Playing => {
-                // game state is still playing
-                commands.insert_resource(NextState(GameState::Playing));
-            }
+            GameState::Over => {}
+            GameState::Playing => {}
             GameState::Pausing => todo!(),
         }
     }
