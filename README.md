@@ -3,9 +3,10 @@
 
 ### Todo
 
-- [ ] Random pipe
+- [x] Random pipe
+- [x] Bird flapping animated
 - [ ] Score
-- [ ] Detect game over (50%) (base collision)
+- [x] Detect game over
 - [ ] Record table
 - [ ] Pause/Resume
 - [ ] Music
