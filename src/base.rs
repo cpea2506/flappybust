@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use flappybust::Math;
 
+use crate::background::Background;
+
 #[derive(Component, Default)]
 pub struct Base {
     pub translation: Vec3,
@@ -23,11 +25,14 @@ impl Base {
         336.
     }
 
-    pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, window: Res<Windows>) {
-        let window = window.get_primary().unwrap();
+    pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         let texture = asset_server.load("images/base.png");
 
-        let base = Base::new(0., Base::height().half() - window.height().half(), false);
+        let base = Base::new(
+            0.,
+            Base::height().half() - Background::height().half(),
+            false,
+        );
         let secondary_base = Base::new(Base::width(), base.translation.y, true);
 
         commands
@@ -37,6 +42,7 @@ impl Base {
                 ..default()
             })
             .insert(base);
+
         commands
             .spawn_bundle(SpriteBundle {
                 texture,
@@ -46,11 +52,14 @@ impl Base {
             .insert(secondary_base);
     }
 
-    pub fn moving(mut base: Query<(&mut Base, &mut Transform)>) {
-        for (mut base, mut transform) in &mut base {
-            base.translation.x = (base.translation.x - 1.) % 312.;
+    pub fn moving(mut base: Query<(&mut Base, &mut Transform), With<Base>>) {
+        let base_width = Base::width();
 
-            transform.translation.x = base.translation.x + if base.secondary { 312. } else { 0. };
+        for (mut base, mut transform) in &mut base {
+            base.translation.x = (base.translation.x - 1.) % (base_width - 24.);
+
+            transform.translation.x =
+                base.translation.x + if base.secondary { base_width - 24. } else { 0. };
         }
     }
 }

@@ -1,46 +1,65 @@
 use crate::DateTime;
 use bevy::prelude::*;
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone, Copy)]
 pub struct Background {
-    pub x: f32,
+    pub translation: Vec3,
     pub secondary: bool,
 }
 
 impl Background {
-    pub fn spawn(
-        mut commands: Commands,
-        asset_server: Res<AssetServer>,
-        nychthemeron: Res<DateTime>,
-    ) {
+    fn new(x: f32, y: f32, secondary: bool) -> Self {
+        Background {
+            translation: Vec3 { x, y, z: 0. },
+            secondary,
+        }
+    }
+
+    pub fn height() -> f32 {
+        512.
+    }
+
+    pub fn width() -> f32 {
+        288.
+    }
+
+    pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
         let texture: Handle<Image> = asset_server.load(&format!(
             "images/background-{:?}.png",
-            nychthemeron.into_inner()
+            datetime.into_inner()
         ));
+
+        let background = Background::default();
+        let secondary_background =
+            Background::new(background.translation.x, background.translation.y, true);
 
         commands
             .spawn_bundle(SpriteBundle {
                 texture: texture.clone(),
                 ..default()
             })
-            .insert(Background::default());
+            .insert(background);
+
         commands
             .spawn_bundle(SpriteBundle {
                 texture,
-                transform: Transform::from_xyz(288., 0., 0.),
+                transform: Transform::from_translation(secondary_background.translation),
                 ..default()
             })
-            .insert(Background {
-                secondary: true,
-                ..default()
-            });
+            .insert(secondary_background);
     }
 
-    pub fn moving(mut background: Query<(&mut Background, &mut Transform)>) {
+    pub fn moving(mut background: Query<(&mut Background, &mut Transform), With<Background>>) {
+        let background_width = Background::width();
         for (mut background, mut transform) in &mut background {
-            background.x = (background.x - 1.) % 288.;
+            background.translation.x = (background.translation.x - 1.) % background_width;
 
-            transform.translation.x = background.x + if background.secondary { 288. } else { 0. };
+            transform.translation.x = background.translation.x
+                + if background.secondary {
+                    Background::width()
+                } else {
+                    0.
+                };
         }
     }
 }

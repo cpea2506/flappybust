@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.8.1"
+bevy = { version = "0.8.1", features = ["wav", "png", "mp3"] }
 rand = "0.8.5"
 iyes_loopless = "0.7.1"
 itertools = "0.10.3"

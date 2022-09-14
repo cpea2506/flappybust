@@ -1,9 +1,6 @@
 use crate::{base::Base, pipe::Pipe, GameState};
-use bevy::{
-    math::{Vec2, Vec3},
-    prelude::*,
-};
-use flappybust::Math;
+use bevy::{math::Vec3, prelude::*};
+use flappybust::{BooleanSwitcher, Math};
 use itertools::Itertools;
 use iyes_loopless::state::{CurrentState, NextState};
 use rand::{
@@ -18,10 +15,18 @@ pub struct FlapAnimation {
     current_frame: usize,
 }
 
+#[derive(Component, Default)]
+pub struct PlayedAudio {
+    die: bool,
+    swoosh: bool,
+}
+
 #[derive(Component, Clone, Copy)]
 pub struct Bird {
     translation: Vec3,
-    speed: Vec2,
+    speed: f32,
+    gravity: f32,
+    jump: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -46,6 +51,8 @@ impl Bird {
         Bird {
             translation: Vec3::new(x, y, 0.2),
             speed: default(),
+            gravity: 0.098, // 9.8 m/s^2
+            jump: -2.5,
         }
     }
 
@@ -80,32 +87,46 @@ impl Bird {
                 timer: Timer::from_seconds(0.15, true),
                 frames: [mid_bird, up_bird, down_bird],
                 current_frame: 0,
-            });
+            })
+            .insert(PlayedAudio::default());
     }
 
-    #[allow(clippy::type_complexity)]
+    #[allow(clippy::type_complexity, clippy::too_many_arguments)]
     pub fn fly(
         mut commands: Commands,
         keys: Res<Input<KeyCode>>,
         buttons: Res<Input<MouseButton>>,
         game_state: Res<CurrentState<GameState>>,
-        mut bird: Query<(&mut Bird, &mut Transform)>,
+        mut bird: Query<(&mut Bird, &mut PlayedAudio, &mut Transform)>,
+        asset_server: Res<AssetServer>,
+        audio: Res<Audio>,
         pipe: Query<&Transform, (With<Pipe>, Without<Bird>)>,
         base: Query<&Transform, (With<Base>, Without<Bird>, Without<Pipe>)>,
     ) {
-        let (mut bird, mut bird_transform) = bird.single_mut();
+        let (mut bird, mut played_audio, mut bird_transform) = bird.single_mut();
         let base_transform = base.iter().next().expect("base must be initialized first");
-
-        bird.speed.y += 0.1;
 
         let front_bird = bird_transform.translation.x + Bird::width().half();
         let bird_tail = bird_transform.translation.x - Bird::width().half();
         let bottom_bird = bird_transform.translation.y - Bird::height().half();
         let bird_head = bird_transform.translation.y + Bird::height().half();
 
+        bird.speed += bird.gravity;
+
+        // collapsed with base
+        let base_collapsed_position = Base::height().half() + base_transform.translation.y;
+
+        if bird.translation.y > base_collapsed_position {
+            bird_transform.translation.y -= bird.speed;
+        }
+
         if game_state.0 == GameState::Playing {
             if keys.pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
-                bird.speed.y = -2.5;
+                audio.play(asset_server.load("sounds/wing.wav"));
+
+                bird.speed = bird.jump;
+
+                played_audio.swoosh.off();
             }
 
             // collapsed with pipe
@@ -116,22 +137,28 @@ impl Bird {
                         || bird_head
                             >= flipped_pipe_transform.translation.y - Pipe::height().half())
                 {
+                    audio.play(asset_server.load("sounds/hit.wav"));
                     commands.insert_resource(NextState(GameState::Over));
                     break;
                 }
             }
         }
 
-        bird_transform.translation.y -= bird.speed.y;
-
-        // collapsed with base
-        let base_collapsed_position = Base::height().half() + base_transform.translation.y;
+        if !played_audio.swoosh && bird.speed != bird.jump {
+            audio.play(asset_server.load("sounds/swoosh.wav"));
+            played_audio.swoosh.on();
+        }
 
         if bottom_bird <= base_collapsed_position {
             bird_transform.translation.y = base_collapsed_position + Bird::height().half();
 
             if game_state.0 == GameState::Playing {
                 commands.insert_resource(NextState(GameState::Over));
+            }
+
+            if !played_audio.die {
+                audio.play(asset_server.load("sounds/die.wav"));
+                played_audio.die.on();
             }
         }
     }

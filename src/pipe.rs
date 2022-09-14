@@ -1,16 +1,12 @@
-use crate::{base::Base, DateTime};
+use crate::{background::Background, DateTime};
 use bevy::prelude::*;
 use flappybust::Math;
+use itertools::Itertools;
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Pipe {
     pub translation: Vec3,
-}
-
-pub struct Pipes {
-    pipe: Pipe,
-    flipped_pipe: Pipe,
 }
 
 impl Pipe {
@@ -38,13 +34,12 @@ impl Pipe {
         ))
     }
 
-    fn y_between() -> Uniform<f32> {
-        Uniform::new(-240.0, -50.)
-    }
-
     fn generate_pipes(commands: &mut Commands, texture: &Handle<Image>, pipe: Pipe) {
-        let gap = 400.;
-        let flipped_pipe = Pipe::new(pipe.translation.x, pipe.translation.y + gap);
+        let gap = 80.;
+        let flipped_pipe = Pipe::new(
+            pipe.translation.x,
+            pipe.translation.y + gap + Pipe::height(),
+        );
 
         commands
             .spawn_bundle(SpriteBundle {
@@ -69,48 +64,36 @@ impl Pipe {
 
     pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
         let mut rng = thread_rng();
-        let y_between = Pipe::y_between();
+        let y_between = Uniform::new(-240., -50.);
         let texture = Pipe::texture(&asset_server, &datetime);
 
         // spawn first three pipes
-        (0..3).for_each(|i| {
-            let pipe = Pipe::new(194. + 175.0 * i as f32, y_between.sample(&mut rng));
+        (0..1000).for_each(|i| {
+            let pipe = Pipe::new(194. + 175. * i as f32, y_between.sample(&mut rng));
 
             Pipe::generate_pipes(&mut commands, &texture, pipe);
         });
     }
 
-    pub fn moving(
-        mut commands: Commands,
-        asset_server: Res<AssetServer>,
-        datetime: Res<DateTime>,
-        mut pipe: Query<(Entity, &mut Transform), With<Pipe>>,
-    ) {
-        let mut rng = thread_rng();
-        let y_between = Pipe::y_between();
-        let texture = Pipe::texture(&asset_server, &datetime);
+    pub fn moving(mut commands: Commands, mut pipe: Query<(Entity, &mut Transform), With<Pipe>>) {
+        let half_pipe_width = Pipe::width().half();
+        let half_background_width = Background::width().half();
 
-        let mut iter = pipe.iter_mut().peekable();
+        for (
+            (pipe_entity, mut pipe_transform),
+            (flipped_pipe_entity, mut flipped_pipe_transform),
+        ) in pipe.iter_mut().tuples()
+        {
+            pipe_transform.translation.x -= 1.;
+            flipped_pipe_transform.translation.x -= 1.;
 
-        while let Some((entity, mut transform)) = iter.next() {
-            transform.translation.x -= 1.;
+            let outside_screen = -half_pipe_width - half_background_width;
 
             // pipes are outside of screen
-            if transform.translation.x <= -Pipe::width().half() - Base::width().half() {
-                // create new pair of pipes with
-                // value of last pipe in the current screen
-                if iter.peek().is_none() {
-                    (1..3).for_each(|i| {
-                        let pipe = Pipe::new(
-                            194. + 175. * i as f32 + transform.translation.x,
-                            y_between.sample(&mut rng),
-                        );
-
-                        Pipe::generate_pipes(&mut commands, &texture, pipe);
-                    })
-                }
-
-                commands.entity(entity).despawn();
+            if pipe_transform.translation.x <= outside_screen {
+                // remove pipes
+                commands.entity(pipe_entity).despawn();
+                commands.entity(flipped_pipe_entity).despawn();
             }
         }
     }

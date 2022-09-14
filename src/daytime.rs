@@ -22,8 +22,8 @@ impl Distribution<DateTime> for Standard {
 
 impl DateTime {
     pub fn spawn(mut commands: Commands) {
-        let nychthemeron = random::<DateTime>();
+        let datetime = random::<DateTime>();
 
-        commands.insert_resource(nychthemeron);
+        commands.insert_resource(datetime);
     }
 }

@@ -14,6 +14,7 @@ use bird::Bird;
 use daytime::DateTime;
 use iyes_loopless::prelude::*;
 use pipe::Pipe;
+use score::Score;
 use start_message::StartMessage;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -55,6 +56,7 @@ impl Plugin for PlayingPlugin {
                 .with_system(Base::moving)
                 .with_system(Background::moving)
                 .with_system(Pipe::moving)
+                .with_system(Score::record)
                 .with_system(Bird::fly)
                 .with_system(Bird::flap)
                 .into(),
@@ -71,7 +73,12 @@ impl Plugin for StartupPlugin {
             .add_startup_system(Background::spawn)
             .add_startup_system(StartMessage::spawn)
             .add_startup_system(Bird::spawn)
-            .add_startup_system(Pipe::spawn);
+            .add_startup_system(Pipe::spawn)
+            .add_startup_system(Score::spawn);
+    }
+
+    fn name(&self) -> &str {
+        std::any::type_name::<Self>()
     }
 }
 
