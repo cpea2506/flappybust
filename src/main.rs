@@ -46,6 +46,20 @@ fn main() {
 }
 
 struct StartupPlugin;
+
+impl Plugin for StartupPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(setup_camera)
+            .add_startup_system_to_stage(StartupStage::PreStartup, DateTime::spawn)
+            .add_startup_system(Base::spawn)
+            .add_startup_system(Background::spawn)
+            .add_startup_system(StartMessage::spawn)
+            .add_startup_system(Bird::spawn)
+            .add_startup_system(Pipe::spawn)
+            .add_startup_system(Score::spawn);
+    }
+}
+
 struct PlayingPlugin;
 
 impl Plugin for PlayingPlugin {
@@ -62,23 +76,6 @@ impl Plugin for PlayingPlugin {
                 .into(),
         )
         .add_system(Bird::fly.run_in_state(GameState::Over));
-    }
-}
-
-impl Plugin for StartupPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_camera)
-            .add_startup_system_to_stage(StartupStage::PreStartup, DateTime::spawn)
-            .add_startup_system(Base::spawn)
-            .add_startup_system(Background::spawn)
-            .add_startup_system(StartMessage::spawn)
-            .add_startup_system(Bird::spawn)
-            .add_startup_system(Pipe::spawn)
-            .add_startup_system(Score::spawn);
-    }
-
-    fn name(&self) -> &str {
-        std::any::type_name::<Self>()
     }
 }
 

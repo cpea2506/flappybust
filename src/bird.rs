@@ -19,6 +19,7 @@ pub struct FlapAnimation {
 pub struct PlayedAudio {
     die: bool,
     swoosh: bool,
+    wing: bool,
 }
 
 #[derive(Component, Clone, Copy)]
@@ -91,16 +92,16 @@ impl Bird {
             .insert(PlayedAudio::default());
     }
 
-    #[allow(clippy::type_complexity, clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::type_complexity)]
     pub fn fly(
         mut commands: Commands,
         keys: Res<Input<KeyCode>>,
         buttons: Res<Input<MouseButton>>,
-        game_state: Res<CurrentState<GameState>>,
-        mut bird: Query<(&mut Bird, &mut PlayedAudio, &mut Transform)>,
         asset_server: Res<AssetServer>,
         audio: Res<Audio>,
+        game_state: Res<CurrentState<GameState>>,
         pipe: Query<&Transform, (With<Pipe>, Without<Bird>)>,
+        mut bird: Query<(&mut Bird, &mut PlayedAudio, &mut Transform)>,
         base: Query<&Transform, (With<Base>, Without<Bird>, Without<Pipe>)>,
     ) {
         let (mut bird, mut played_audio, mut bird_transform) = bird.single_mut();
@@ -111,21 +112,19 @@ impl Bird {
         let bottom_bird = bird_transform.translation.y - Bird::height().half();
         let bird_head = bird_transform.translation.y + Bird::height().half();
 
-        bird.speed += bird.gravity;
-
         // collapsed with base
         let base_collapsed_position = Base::height().half() + base_transform.translation.y;
 
-        if bird.translation.y > base_collapsed_position {
-            bird_transform.translation.y -= bird.speed;
-        }
+        bird.speed += bird.gravity;
 
         if game_state.0 == GameState::Playing {
             if keys.pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
-                audio.play(asset_server.load("sounds/wing.wav"));
+                if !played_audio.wing {
+                    audio.play(asset_server.load("sounds/wing.wav"));
+                    played_audio.wing.on();
+                }
 
                 bird.speed = bird.jump;
-
                 played_audio.swoosh.off();
             }
 
@@ -144,9 +143,16 @@ impl Bird {
             }
         }
 
-        if !played_audio.swoosh && bird.speed != bird.jump {
-            audio.play(asset_server.load("sounds/swoosh.wav"));
-            played_audio.swoosh.on();
+        bird_transform.translation.y -= bird.speed;
+
+        // bird is doing free fall
+        if bird.speed != bird.jump {
+            if !played_audio.swoosh {
+                audio.play(asset_server.load("sounds/swoosh.wav"));
+                played_audio.swoosh.on();
+            }
+
+            played_audio.wing.off();
         }
 
         if bottom_bird <= base_collapsed_position {
