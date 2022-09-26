@@ -7,12 +7,14 @@ use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
 #[derive(Component, Debug)]
 pub struct Pipe {
     pub translation: Vec3,
+    pub has_passed: bool,
 }
 
 impl Pipe {
     fn new(x: f32, y: f32) -> Self {
         Pipe {
             translation: Vec3::new(x, y, 0.1),
+            has_passed: false,
         }
     }
 
@@ -89,9 +91,8 @@ impl Pipe {
 
             let outside_screen = -half_pipe_width - half_background_width;
 
-            // pipes are outside of screen
+            // remove pipes that are outside of screen
             if pipe_transform.translation.x <= outside_screen {
-                // remove pipes
                 commands.entity(pipe_entity).despawn();
                 commands.entity(flipped_pipe_entity).despawn();
             }
