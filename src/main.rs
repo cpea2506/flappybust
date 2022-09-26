@@ -28,9 +28,9 @@ pub enum GameState {
 fn main() {
     let mut app = App::new();
     let default_window = WindowDescriptor {
-        title: String::from("Flappy Bust"),
-        width: 288.,
-        height: 512.,
+        title: String::from("Flappybust"),
+        width: Background::width(),
+        height: Background::height(),
         position: WindowPosition::At(Vec2::new(1050., 365.)),
         ..default()
     };
