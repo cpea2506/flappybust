@@ -5,9 +5,9 @@
 
 - [x] Random pipe
 - [x] Bird flapping animated
-- [ ] Score
+- [x] Score
 - [x] Detect game over
 - [ ] Record table
 - [ ] Pause/Resume
-- [ ] Music
+- [x] Music
 - [x] Assets
