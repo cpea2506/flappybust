@@ -69,9 +69,9 @@ impl Pipe {
         let y_between = Uniform::new(-240., -50.);
         let texture = Pipe::texture(&asset_server, &datetime);
 
-        // spawn first three pipes
+        // spawn first 1000 pipes
         (0..1000).for_each(|i| {
-            let pipe = Pipe::new(194. + 175. * i as f32, y_between.sample(&mut rng));
+            let pipe = Pipe::new(360. + 175. * i as f32, y_between.sample(&mut rng));
 
             Pipe::generate_pipes(&mut commands, &texture, pipe);
         });

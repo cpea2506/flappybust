@@ -7,6 +7,8 @@ mod pipe;
 mod score;
 mod start_message;
 
+use std::time::Duration;
+
 use background::Background;
 use base::Base;
 use bevy::{prelude::*, window::close_on_esc};
@@ -24,6 +26,8 @@ pub enum GameState {
     Playing,
     Over,
 }
+
+const FPS: f32 = 1. / 100.;
 
 fn main() {
     let mut app = App::new();
@@ -64,18 +68,27 @@ struct PlayingPlugin;
 
 impl Plugin for PlayingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            ConditionSet::new()
-                .run_in_state(GameState::Playing)
-                .with_system(Base::moving)
-                .with_system(Background::moving)
-                .with_system(Pipe::moving)
-                .with_system(Score::record)
-                .with_system(Bird::fly)
-                .with_system(Bird::flap)
-                .into(),
-        )
-        .add_system(Bird::fly.run_in_state(GameState::Over));
+        let mut fixed = SystemStage::parallel();
+
+        fixed
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(GameState::Playing)
+                    .with_system(Background::moving)
+                    .with_system(Pipe::moving)
+                    .with_system(Score::record)
+                    .with_system(Bird::fly)
+                    .with_system(Bird::flap)
+                    .into(),
+            )
+            .add_system(Base::moving.run_not_in_state(GameState::Over))
+            .add_system(Bird::fly.run_in_state(GameState::Over));
+
+        app.add_stage_before(
+            CoreStage::Update,
+            "FixedUpdate",
+            FixedTimestepStage::from_stage(Duration::from_secs_f32(FPS), fixed),
+        );
     }
 }
 

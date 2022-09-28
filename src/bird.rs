@@ -101,8 +101,8 @@ impl Bird {
         audio: Res<Audio>,
         game_state: Res<CurrentState<GameState>>,
         pipe: Query<&Transform, (With<Pipe>, Without<Bird>)>,
-        mut bird: Query<(&mut Bird, &mut PlayedAudio, &mut Transform)>,
         base: Query<&Transform, (With<Base>, Without<Bird>, Without<Pipe>)>,
+        mut bird: Query<(&mut Bird, &mut PlayedAudio, &mut Transform)>,
     ) {
         let (mut bird, mut played_audio, mut bird_transform) = bird.single_mut();
         let base_transform = base.iter().next().expect("base must be initialized first");
