@@ -1,7 +1,7 @@
 mod background;
 mod base;
 mod bird;
-mod daytime;
+mod datetime;
 mod gameover;
 mod pipe;
 mod score;
@@ -13,7 +13,8 @@ use background::Background;
 use base::Base;
 use bevy::{prelude::*, window::close_on_esc};
 use bird::Bird;
-use daytime::DateTime;
+use datetime::DateTime;
+use gameover::{GameOver, Scoreboard};
 use iyes_loopless::prelude::*;
 use pipe::Pipe;
 use score::Score;
@@ -22,7 +23,6 @@ use start_message::StartMessage;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameState {
     Ready,
-    Pausing,
     Playing,
     Over,
 }
@@ -50,6 +50,7 @@ fn main() {
 }
 
 struct StartupPlugin;
+struct PlayingPlugin;
 
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
@@ -60,11 +61,11 @@ impl Plugin for StartupPlugin {
             .add_startup_system(StartMessage::spawn)
             .add_startup_system(Bird::spawn)
             .add_startup_system(Pipe::spawn)
-            .add_startup_system(Score::spawn);
+            .add_startup_system(Score::spawn)
+            .add_startup_system(GameOver::spawn)
+            .add_startup_system(Scoreboard::spawn);
     }
 }
-
-struct PlayingPlugin;
 
 impl Plugin for PlayingPlugin {
     fn build(&self, app: &mut App) {
@@ -77,12 +78,23 @@ impl Plugin for PlayingPlugin {
                     .with_system(Background::moving)
                     .with_system(Pipe::moving)
                     .with_system(Score::record)
-                    .with_system(Bird::fly)
-                    .with_system(Bird::flap)
                     .into(),
             )
-            .add_system(Base::moving.run_not_in_state(GameState::Over))
-            .add_system(Bird::fly.run_in_state(GameState::Over));
+            .add_system_set(
+                ConditionSet::new()
+                    .run_not_in_state(GameState::Over)
+                    .with_system(Bird::flap)
+                    .with_system(Base::moving)
+                    .into(),
+            )
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(GameState::Over)
+                    .with_system(GameOver::display)
+                    .with_system(Scoreboard::display)
+                    .into(),
+            )
+            .add_system(Bird::fly.run_not_in_state(GameState::Ready));
 
         app.add_stage_before(
             CoreStage::Update,
@@ -113,7 +125,6 @@ fn input_system(
             }
             GameState::Over => {}
             GameState::Playing => {}
-            GameState::Pausing => todo!(),
         }
     }
 }

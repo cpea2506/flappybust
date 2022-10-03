@@ -1,9 +1,10 @@
-use bevy::{prelude::*, sprite::SpriteBundle};
+use bevy::prelude::*;
 use flappybust::{BooleanSwitcher, Math};
 use itertools::Itertools;
+use iyes_loopless::state::CurrentState;
 use std::iter::successors;
 
-use crate::{background::Background, bird::Bird, pipe::Pipe};
+use crate::{background::Background, bird::Bird, pipe::Pipe, GameState};
 
 #[derive(Clone, Copy, PartialEq)]
 enum Rank {
@@ -59,9 +60,10 @@ impl Score {
         audio: Res<Audio>,
         mut pipe: Query<(&mut Pipe, &Transform)>,
         mut score_rank: Query<
-            (&ScoreRank, &mut Handle<Image>, &mut Transform),
+            (&ScoreRank, &mut Transform, &mut Handle<Image>),
             (Without<Pipe>, Without<Bird>),
         >,
+        game_state: Res<CurrentState<GameState>>,
         mut score: ResMut<Score>,
         bird: Query<&Transform, With<Bird>>,
     ) {
@@ -86,10 +88,11 @@ impl Score {
         }
 
         // update texture base on score rank
+        // count number of digit
         let digit_num = successors(Some(score.value), |&n| (n >= 10).then_some(n / 10)).count();
         let y_pos = Background::height().half() - 10. - Score::height().half();
 
-        for (rank, mut texture, mut transform) in &mut score_rank {
+        for (rank, mut transform, mut texture) in &mut score_rank {
             match (digit_num, rank.0) {
                 (1, Rank::Unit) => {
                     *texture = score.textures[score.value % 10].clone();
