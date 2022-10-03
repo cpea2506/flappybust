@@ -30,7 +30,7 @@ pub struct Bird {
     jump: f32,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 enum BirdColor {
     Red,
     Blue,
@@ -66,7 +66,14 @@ impl Bird {
     }
 
     fn load_image(asset_server: &AssetServer, bird_color: BirdColor, state: &str) -> Handle<Image> {
-        asset_server.load(&format!("images/{bird_color:?}bird-{state}flap.png"))
+        asset_server.load(&format!(
+            "images/bird_{color}_{state}.png",
+            color = match bird_color {
+                BirdColor::Red => "red",
+                BirdColor::Blue => "blue",
+                BirdColor::Yellow => "yellow",
+            }
+        ))
     }
 
     pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -171,9 +178,9 @@ impl Bird {
 
     pub fn flap(
         time: Res<Time>,
-        mut bird_texture: Query<(&mut FlapAnimation, &mut Handle<Image>), With<Bird>>,
+        mut bird: Query<(&mut FlapAnimation, &mut Handle<Image>), With<Bird>>,
     ) {
-        let (mut animation, mut texture) = bird_texture.single_mut();
+        let (mut animation, mut texture) = bird.single_mut();
 
         animation.timer.tick(time.delta());
 

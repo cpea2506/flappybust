@@ -25,8 +25,11 @@ impl Background {
 
     pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
         let texture: Handle<Image> = asset_server.load(&format!(
-            "images/background-{:?}.png",
-            datetime.into_inner()
+            "images/bg_{datetime}.png",
+            datetime = match datetime.into_inner() {
+                DateTime::Day => "day",
+                DateTime::Night => "night",
+            }
         ));
 
         let background = Background::default();
@@ -49,8 +52,9 @@ impl Background {
             .insert(secondary_background);
     }
 
-    pub fn moving(mut background: Query<(&mut Background, &mut Transform), With<Background>>) {
+    pub fn moving(mut background: Query<(&mut Background, &mut Transform)>) {
         let background_width = Background::width();
+
         for (mut background, mut transform) in &mut background {
             background.translation.x = (background.translation.x - 1.) % background_width;
 

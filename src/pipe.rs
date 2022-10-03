@@ -4,7 +4,7 @@ use flappybust::Math;
 use itertools::Itertools;
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
 
-#[derive(Component, Debug)]
+#[derive(Component)]
 pub struct Pipe {
     pub translation: Vec3,
     pub has_passed: bool,
@@ -28,7 +28,7 @@ impl Pipe {
 
     fn texture(asset_server: &AssetServer, datetime: &DateTime) -> Handle<Image> {
         asset_server.load(&format!(
-            "images/pipe-{color}.png",
+            "images/pipe_{color}.png",
             color = match datetime {
                 DateTime::Day => "green",
                 DateTime::Night => "red",
@@ -37,7 +37,7 @@ impl Pipe {
     }
 
     fn generate_pipes(commands: &mut Commands, texture: &Handle<Image>, pipe: Pipe) {
-        let gap = 80.;
+        let gap = 100.;
         let flipped_pipe = Pipe::new(
             pipe.translation.x,
             pipe.translation.y + gap + Pipe::height(),
@@ -69,6 +69,7 @@ impl Pipe {
         let y_between = Uniform::new(-240., -50.);
         let texture = Pipe::texture(&asset_server, &datetime);
 
+        // TODO: spawn first 3 pipe and generate more later
         // spawn first 1000 pipes
         (0..1000).for_each(|i| {
             let pipe = Pipe::new(360. + 175. * i as f32, y_between.sample(&mut rng));
