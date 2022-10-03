@@ -52,7 +52,7 @@ impl Base {
             .insert(secondary_base);
     }
 
-    pub fn moving(mut base: Query<(&mut Base, &mut Transform), With<Base>>) {
+    pub fn moving(mut base: Query<(&mut Base, &mut Transform)>) {
         let base_width = Base::width();
 
         for (mut base, mut transform) in &mut base {
