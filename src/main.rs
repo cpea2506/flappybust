@@ -14,7 +14,7 @@ use base::Base;
 use bevy::{prelude::*, window::close_on_esc};
 use bird::Bird;
 use datetime::DateTime;
-use gameover::{GameOver, Scoreboard};
+use gameover::{GameOver, Medal, Scoreboard};
 use iyes_loopless::prelude::*;
 use pipe::Pipe;
 use score::Score;
@@ -56,6 +56,7 @@ impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup_camera)
             .add_startup_system_to_stage(StartupStage::PreStartup, DateTime::spawn)
+            .add_startup_system_to_stage(StartupStage::PreStartup, Scoreboard::spawn)
             .add_startup_system(Base::spawn)
             .add_startup_system(Background::spawn)
             .add_startup_system(StartMessage::spawn)
@@ -63,7 +64,7 @@ impl Plugin for StartupPlugin {
             .add_startup_system(Pipe::spawn)
             .add_startup_system(Score::spawn)
             .add_startup_system(GameOver::spawn)
-            .add_startup_system(Scoreboard::spawn);
+            .add_startup_system(Medal::spawn);
     }
 }
 
@@ -92,6 +93,8 @@ impl Plugin for PlayingPlugin {
                     .run_in_state(GameState::Over)
                     .with_system(GameOver::display)
                     .with_system(Scoreboard::display)
+                    .with_system(Medal::display)
+                    .with_system(Score::record)
                     .into(),
             )
             .add_system(Bird::fly.run_not_in_state(GameState::Ready));

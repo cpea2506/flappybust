@@ -1,12 +1,6 @@
 [alias]
 watch_dynamic = "watch -i assets -cx run --features bevy/dynamic"
-
-[target.x86_64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld", "-Zshare-generics=y"]
-
-[target.x86_64-apple-darwin]
-rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/bin/zld", "-Zshare-generics=y"]
+run_wasm = "run --target wasm32-unknown-unknown"
 
 [target.aarch64-apple-darwin]
 rustflags = [
@@ -15,9 +9,8 @@ rustflags = [
     "-Zshare-generics=y",
 ]
 
-[target.x86_64-pc-windows-msvc]
-linker = "rust-lld.exe"
-rustflags = ["-Zshare-generics=n"]
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"
 
 [profile.dev]
 debug = 1
