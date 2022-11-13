@@ -102,7 +102,7 @@ impl Plugin for PlayingPlugin {
         app.add_stage_before(
             CoreStage::Update,
             "FixedUpdate",
-            FixedTimestepStage::from_stage(Duration::from_secs_f32(FPS), fixed),
+            FixedTimestepStage::from_stage(Duration::from_secs_f32(FPS), "FixedUpdated", fixed),
         );
     }
 }
