@@ -69,7 +69,7 @@ impl Score {
                 transform: Transform::from_xyz(
                     score_board.translation.x + 58.,
                     score_board.translation.y + 30.,
-                    0.3,
+                    0.15,
                 ),
                 ..default()
             },
@@ -82,7 +82,7 @@ impl Score {
                 transform: Transform::from_xyz(
                     score_board.translation.x + 58.,
                     score_board.translation.y - 18.,
-                    0.3,
+                    0.15,
                 ),
                 ..default()
             },
