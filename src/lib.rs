@@ -22,3 +22,15 @@ impl Math for f32 {
         self / 2.
     }
 }
+
+/// This is to replace the cumbersome original short-hand if-else
+#[macro_export]
+macro_rules! ternary {
+    ($condition:expr, $if:expr, $else:expr) => {
+        if $condition {
+            $if
+        } else {
+            $else
+        }
+    };
+}

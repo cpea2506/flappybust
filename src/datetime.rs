@@ -4,7 +4,7 @@ use rand::{
     random, Rng,
 };
 
-#[derive(Debug)]
+#[derive(Resource, Clone, Copy)]
 pub enum DateTime {
     Day,
     Night,
@@ -21,9 +21,16 @@ impl Distribution<DateTime> for Standard {
 }
 
 impl DateTime {
-    pub fn spawn(mut commands: Commands) {
+    pub fn gen(mut commands: Commands) {
         let datetime = random::<DateTime>();
 
         commands.insert_resource(datetime);
+    }
+
+    pub fn raw_value(self) -> &'static str {
+        match self {
+            DateTime::Day => "day",
+            DateTime::Night => "night",
+        }
     }
 }

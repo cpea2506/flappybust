@@ -1,7 +1,6 @@
-use bevy::prelude::*;
-use flappybust::Math;
-
 use crate::background::Background;
+use bevy::prelude::*;
+use flappybust::{ternary, Math};
 
 #[derive(Component, Default)]
 pub struct Base {
@@ -10,6 +9,10 @@ pub struct Base {
 }
 
 impl Base {
+    pub const WIDTH: f32 = 336.;
+    pub const HEIGHT: f32 = 112.;
+    const LIMIT: f32 = Base::WIDTH - 24.;
+
     fn new(x: f32, y: f32, secondary: bool) -> Self {
         Base {
             translation: Vec3::new(x, y, 0.2),
@@ -17,49 +20,36 @@ impl Base {
         }
     }
 
-    pub fn height() -> f32 {
-        112.
-    }
-
-    pub fn width() -> f32 {
-        336.
-    }
-
     pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+        let base = Base::new(0., Base::HEIGHT.half() - Background::HEIGHT.half(), false);
+        let secondary_base = Base::new(Base::WIDTH, base.translation.y, true);
         let texture = asset_server.load("images/base.png");
 
-        let base = Base::new(
-            0.,
-            Base::height().half() - Background::height().half(),
-            false,
-        );
-        let secondary_base = Base::new(Base::width(), base.translation.y, true);
-
-        commands
-            .spawn_bundle(SpriteBundle {
-                texture: texture.clone(),
-                transform: Transform::from_translation(base.translation),
-                ..default()
-            })
-            .insert(base);
-
-        commands
-            .spawn_bundle(SpriteBundle {
-                texture,
-                transform: Transform::from_translation(secondary_base.translation),
-                ..default()
-            })
-            .insert(secondary_base);
+        commands.spawn_batch(vec![
+            (
+                SpriteBundle {
+                    texture: texture.clone(),
+                    transform: Transform::from_translation(base.translation),
+                    ..default()
+                },
+                base,
+            ),
+            (
+                SpriteBundle {
+                    texture,
+                    transform: Transform::from_translation(secondary_base.translation),
+                    ..default()
+                },
+                secondary_base,
+            ),
+        ]);
     }
 
     pub fn moving(mut base: Query<(&mut Base, &mut Transform)>) {
-        let base_width = Base::width();
-
         for (mut base, mut transform) in &mut base {
-            base.translation.x = (base.translation.x - 1.) % (base_width - 24.);
-
+            base.translation.x = (base.translation.x - 1.) % Base::LIMIT;
             transform.translation.x =
-                base.translation.x + if base.secondary { base_width - 24. } else { 0. };
+                base.translation.x + ternary!(base.secondary, Base::LIMIT, 0.);
         }
     }
 }

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_kira_audio::prelude::*;
 use flappybust::{BooleanSwitcher, Math};
 use itertools::Itertools;
 use iyes_loopless::state::CurrentState;
@@ -20,23 +21,18 @@ pub struct ScoreRank(Rank);
 pub struct ScoreText;
 
 #[derive(Component)]
-pub struct BestScoreText;
+pub struct HighScoreText;
 
-#[derive(Clone, Default)]
+#[derive(Resource, Clone, Default)]
 pub struct Score {
-    pub value: usize,
-    pub best_value: usize,
-    textures: [Handle<Image>; 10],
+    pub current: usize,
+    pub highest: usize,
+    textures: Vec<Handle<Image>>,
 }
 
 impl Score {
-    fn height() -> f32 {
-        36.
-    }
-
-    fn width() -> f32 {
-        24.
-    }
+    pub const WIDTH: f32 = 24.;
+    pub const HEIGHT: f32 = 36.;
 
     pub fn spawn(
         mut commands: Commands,
@@ -45,25 +41,19 @@ impl Score {
     ) {
         let mut score = Score::default();
 
-        (0..10).for_each(|i| {
-            let texture = asset_server.load(&format!("images/{i}.png"));
-            score.textures[i] = texture;
-        });
+        score.textures = (0..10)
+            .map(|i| asset_server.load(&format!("images/{i}.png")))
+            .collect();
 
         commands.insert_resource(score);
 
-        commands
-            .spawn_bundle(SpriteBundle::default())
-            .insert(ScoreRank(Rank::Hunred));
+        commands.spawn_batch(vec![
+            (SpriteBundle::default(), ScoreRank(Rank::Hunred)),
+            (SpriteBundle::default(), ScoreRank(Rank::Ten)),
+            (SpriteBundle::default(), ScoreRank(Rank::Unit)),
+        ]);
 
-        commands
-            .spawn_bundle(SpriteBundle::default())
-            .insert(ScoreRank(Rank::Ten));
-
-        commands
-            .spawn_bundle(SpriteBundle::default())
-            .insert(ScoreRank(Rank::Unit));
-
+        let score_board = score_board.single();
         let text = Text::from_section(
             "",
             TextStyle {
@@ -73,10 +63,8 @@ impl Score {
             },
         );
 
-        let score_board = score_board.single();
-
-        commands
-            .spawn_bundle(Text2dBundle {
+        commands.spawn((
+            Text2dBundle {
                 text: text.clone(),
                 transform: Transform::from_xyz(
                     score_board.translation.x + 58.,
@@ -84,11 +72,12 @@ impl Score {
                     0.3,
                 ),
                 ..default()
-            })
-            .insert(ScoreText);
+            },
+            ScoreText,
+        ));
 
-        commands
-            .spawn_bundle(Text2dBundle {
+        commands.spawn((
+            Text2dBundle {
                 text,
                 transform: Transform::from_xyz(
                     score_board.translation.x + 58.,
@@ -96,8 +85,9 @@ impl Score {
                     0.3,
                 ),
                 ..default()
-            })
-            .insert(BestScoreText);
+            },
+            HighScoreText,
+        ));
     }
 
     #[allow(clippy::type_complexity, clippy::too_many_arguments)]
@@ -112,21 +102,20 @@ impl Score {
             (Without<Pipe>, Without<Bird>),
         >,
         mut score_text: Query<&mut Text, With<ScoreText>>,
-        mut best_score_text: Query<&mut Text, (With<BestScoreText>, Without<ScoreText>)>,
+        mut hight_score_text: Query<&mut Text, (With<HighScoreText>, Without<ScoreText>)>,
         mut score: ResMut<Score>,
     ) {
         let bird_transform = bird.single();
 
         for ((mut pipe, pipe_transform), _) in pipe.iter_mut().tuples() {
             // increase score each time the bird has passed the pipe
-            if bird_transform.translation.x - Bird::width().half()
-                > pipe_transform.translation.x + Pipe::width().half()
+            if bird_transform.translation.x + Bird::WIDTH.half() > pipe_transform.translation.x
                 && !pipe.has_passed
             {
                 audio.play(asset_server.load("sounds/score.wav"));
 
-                score.value += 1;
-                score.best_value = score.value.max(score.best_value);
+                score.current += 1;
+                score.highest = score.current.max(score.highest);
 
                 // prevent the score from increasing twice
                 // on frame changing too fast
@@ -136,45 +125,49 @@ impl Score {
             }
         }
 
-        if game_state.0 == GameState::Over {
-            let mut score_text = score_text.single_mut();
-            score_text.sections[0].value = score.value.to_string();
+        match game_state.0 {
+            GameState::Over => {
+                let mut score_text = score_text.single_mut();
+                score_text.sections[0].value = score.current.to_string();
 
-            let mut best_score_text = best_score_text.single_mut();
-            best_score_text.sections[0].value = score.best_value.to_string();
-        } else {
-            // update texture base on score rank
-            // count number of digit
-            let digit_num = successors(Some(score.value), |&n| (n >= 10).then_some(n / 10)).count();
-            let y_pos = Background::height().half() - 10. - Score::height().half();
+                let mut best_score_text = hight_score_text.single_mut();
+                best_score_text.sections[0].value = score.highest.to_string();
+            }
+            _ => {
+                // update texture base on score rank
+                // count number of digit
+                let digit_num =
+                    successors(Some(score.current), |&n| (n >= 10).then_some(n / 10)).count();
+                let y_pos = Background::HEIGHT.half() - 10. - Score::HEIGHT.half();
 
-            for (rank, mut transform, mut texture) in &mut score_rank {
-                match (digit_num, rank.0) {
-                    (1, Rank::Unit) => {
-                        *texture = score.textures[score.value % 10].clone();
-                        *transform = Transform::from_xyz(0., y_pos, 0.3);
+                for (rank, mut transform, mut texture) in &mut score_rank {
+                    match (digit_num, rank.0) {
+                        (1, Rank::Unit) => {
+                            *texture = score.textures[score.current % 10].clone();
+                            *transform = Transform::from_xyz(0., y_pos, 0.3);
+                        }
+                        (2, Rank::Unit) => {
+                            *texture = score.textures[score.current % 10].clone();
+                            *transform = Transform::from_xyz(Score::WIDTH.half(), y_pos, 0.3);
+                        }
+                        (2, Rank::Ten) => {
+                            *texture = score.textures[score.current / 10].clone();
+                            *transform = Transform::from_xyz(-Score::WIDTH.half(), y_pos, 0.3);
+                        }
+                        (3, Rank::Unit) => {
+                            *texture = score.textures[score.current % 10].clone();
+                            *transform = Transform::from_xyz(Score::WIDTH + 1., y_pos, 0.3);
+                        }
+                        (3, Rank::Ten) => {
+                            *texture = score.textures[score.current % 100 / 10].clone();
+                            *transform = Transform::from_xyz(0., y_pos, 0.3);
+                        }
+                        (3, Rank::Hunred) => {
+                            *texture = score.textures[score.current / 100].clone();
+                            *transform = Transform::from_xyz(-Score::WIDTH - 1., y_pos, 0.3);
+                        }
+                        _ => {}
                     }
-                    (2, Rank::Unit) => {
-                        *texture = score.textures[score.value % 10].clone();
-                        *transform = Transform::from_xyz(Score::width().half(), y_pos, 0.3);
-                    }
-                    (2, Rank::Ten) => {
-                        *texture = score.textures[score.value / 10].clone();
-                        *transform = Transform::from_xyz(-Score::width().half(), y_pos, 0.3);
-                    }
-                    (3, Rank::Unit) => {
-                        *texture = score.textures[score.value % 10].clone();
-                        *transform = Transform::from_xyz(Score::width() + 1., y_pos, 0.3);
-                    }
-                    (3, Rank::Ten) => {
-                        *texture = score.textures[score.value % 100 / 10].clone();
-                        *transform = Transform::from_xyz(0., y_pos, 0.3);
-                    }
-                    (3, Rank::Hunred) => {
-                        *texture = score.textures[score.value / 100].clone();
-                        *transform = Transform::from_xyz(-Score::width() - 1., y_pos, 0.3);
-                    }
-                    _ => {}
                 }
             }
         }

@@ -3,10 +3,28 @@ name = "flappybust"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-bevy = { version = "0.8.1", features = ["wav", "png" ] }
 rand = "0.8.5"
-iyes_loopless = "0.8.0"
-itertools = "0.10.4"
+iyes_loopless = "0.9.1"
+itertools = "0.10.5"
+
+[dependencies.bevy]
+version = "0.9.1"
+default-features = false
+features = [
+  "render",
+  "animation",
+  "bevy_asset",
+  "bevy_scene",
+  "bevy_winit",
+  "bevy_gilrs",
+  "png",
+  "hdr",
+  "filesystem_watcher",
+  "x11"
+]
+
+[dependencies.bevy_kira_audio]
+version = "0.13"
+default-features = false
+features = [ "wav" ]

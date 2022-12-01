@@ -7,21 +7,17 @@ use crate::score::Score;
 pub struct Scoreboard;
 
 impl Scoreboard {
-    fn width() -> f32 {
-        226.
-    }
-
-    pub fn height() -> f32 {
-        114.
-    }
+    pub const WIDTH: f32 = 226.;
+    pub const HEIGHT: f32 = 114.;
 
     pub fn spawn(mut commands: Commands) {
-        commands
-            .spawn_bundle(SpriteBundle {
-                transform: Transform::from_xyz(0., Scoreboard::height().half(), 0.2),
+        commands.spawn((
+            SpriteBundle {
+                transform: Transform::from_xyz(0., Scoreboard::HEIGHT.half(), 0.2),
                 ..default()
-            })
-            .insert(Scoreboard);
+            },
+            Scoreboard,
+        ));
     }
 
     pub fn display(
@@ -37,21 +33,16 @@ impl Scoreboard {
 pub struct GameOver;
 
 impl GameOver {
-    fn width() -> f32 {
-        192.
-    }
-
-    fn height() -> f32 {
-        42.
-    }
+    pub const HEIGHT: f32 = 42.;
 
     pub fn spawn(mut commands: Commands) {
-        commands
-            .spawn_bundle(SpriteBundle {
-                transform: Transform::from_xyz(0., Scoreboard::height() + GameOver::height(), 0.2),
+        commands.spawn((
+            SpriteBundle {
+                transform: Transform::from_xyz(0., Scoreboard::HEIGHT + GameOver::HEIGHT, 0.2),
                 ..default()
-            })
-            .insert(GameOver);
+            },
+            GameOver,
+        ));
     }
 
     pub fn display(
@@ -67,27 +58,20 @@ impl GameOver {
 pub struct Medal;
 
 impl Medal {
-    fn width() -> f32 {
-        44.
-    }
-
-    fn height() -> f32 {
-        44.
-    }
-
     pub fn spawn(mut commands: Commands, score_board: Query<&Transform, With<Scoreboard>>) {
         let score_board = score_board.single();
 
-        commands
-            .spawn_bundle(SpriteBundle {
+        commands.spawn((
+            SpriteBundle {
                 transform: Transform::from_xyz(
                     score_board.translation.x - 65.,
                     score_board.translation.y - 10.,
                     0.3,
                 ),
                 ..default()
-            })
-            .insert(Medal);
+            },
+            Medal,
+        ));
     }
 
     pub fn display(
@@ -96,16 +80,20 @@ impl Medal {
         asset_server: Res<AssetServer>,
     ) {
         let mut medal_texture = medal.single_mut();
-        let mut medal_name = "bronze";
+        let mut medal_name = None;
 
-        if score.value >= 10 && score.value < 20 {
-            medal_name = "silver";
-        } else if score.value >= 20 && score.value < 30 {
-            medal_name = "gold";
-        } else if score.value >= 30 {
-            medal_name = "platinum";
+        if score.current >= 10 && score.current < 20 {
+            medal_name = Some("bronze");
+        } else if score.current >= 20 && score.current < 30 {
+            medal_name = Some("silver");
+        } else if score.current >= 30 && score.current < 40 {
+            medal_name = Some("gold");
+        } else if score.current >= 40 {
+            medal_name = Some("platinum");
         }
 
-        *medal_texture = asset_server.load(&format!("images/medal_{medal_name}.png"));
+        if let Some(name) = medal_name {
+            *medal_texture = asset_server.load(&format!("images/medal_{name}.png"));
+        }
     }
 }

@@ -1,5 +1,6 @@
 use crate::{base::Base, pipe::Pipe, GameState};
 use bevy::{math::Vec3, prelude::*};
+use bevy_kira_audio::prelude::*;
 use flappybust::{BooleanSwitcher, Math};
 use itertools::Itertools;
 use iyes_loopless::state::{CurrentState, NextState};
@@ -8,30 +9,8 @@ use rand::{
     random,
 };
 
-#[derive(Component)]
-pub struct FlapAnimation {
-    timer: Timer,
-    frames: [Handle<Image>; 3],
-    current_frame: usize,
-}
-
-#[derive(Component, Default)]
-pub struct PlayedAudio {
-    die: bool,
-    swoosh: bool,
-    wing: bool,
-}
-
-#[derive(Component, Clone, Copy)]
-pub struct Bird {
-    translation: Vec3,
-    speed: f32,
-    gravity: f32,
-    jump: f32,
-}
-
 #[derive(Clone, Copy)]
-enum BirdColor {
+pub enum BirdColor {
     Red,
     Blue,
     Yellow,
@@ -47,56 +26,81 @@ impl Distribution<BirdColor> for Standard {
     }
 }
 
+impl BirdColor {
+    pub fn raw_value(self) -> &'static str {
+        match self {
+            BirdColor::Red => "red",
+            BirdColor::Blue => "blue",
+            BirdColor::Yellow => "yellow",
+        }
+    }
+}
+
+pub type AnimationFrames = [Handle<Image>; 3];
+
+#[derive(Component)]
+pub struct FlapAnimation {
+    timer: Timer,
+    frames: AnimationFrames,
+    current_frame: usize,
+}
+
+#[derive(Component, Default)]
+pub struct PlayedAudio {
+    die: bool,
+    swoosh: bool,
+    wing: bool,
+}
+
+fn load_animation_frames(asset_server: &AssetServer, bird_color: BirdColor) -> AnimationFrames {
+    ["up", "mid", "down"].map(|state| {
+        asset_server.load(&format!(
+            "images/bird_{color}_{state}.png",
+            color = bird_color.raw_value()
+        ))
+    })
+}
+
+#[derive(Component, Clone, Copy)]
+pub struct Bird {
+    translation: Vec3,
+    speed: f32,
+    gravity: f32,
+    jump: f32,
+}
+
 impl Bird {
+    pub const WIDTH: f32 = 34.;
+    pub const HEIGHT: f32 = 24.;
+
     fn new(x: f32, y: f32) -> Self {
         Bird {
             translation: Vec3::new(x, y, 0.2),
-            speed: default(),
+            speed: 0.,
             gravity: 0.098, // 9.8 m/s^2
-            jump: -2.5,
+            jump: -2.35,
         }
-    }
-
-    pub fn height() -> f32 {
-        24.
-    }
-
-    pub fn width() -> f32 {
-        34.
-    }
-
-    fn load_image(asset_server: &AssetServer, bird_color: BirdColor, state: &str) -> Handle<Image> {
-        asset_server.load(&format!(
-            "images/bird_{color}_{state}.png",
-            color = match bird_color {
-                BirdColor::Red => "red",
-                BirdColor::Blue => "blue",
-                BirdColor::Yellow => "yellow",
-            }
-        ))
     }
 
     pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         let bird_color = random::<BirdColor>();
-        let mid_bird = Bird::load_image(&asset_server, bird_color, "mid");
-        let up_bird = Bird::load_image(&asset_server, bird_color, "up");
-        let down_bird = Bird::load_image(&asset_server, bird_color, "down");
-
+        let animation_frames = load_animation_frames(&asset_server, bird_color);
         let bird = Bird::new(-53., 9.);
 
-        commands
-            .spawn_bundle(SpriteBundle {
-                texture: mid_bird.clone(),
+        commands.spawn((
+            SpriteBundle {
+                texture: animation_frames[0].clone(), // 0. up, 1. mid, 2. down
                 transform: Transform::from_translation(bird.translation),
                 ..default()
-            })
-            .insert(bird)
-            .insert(FlapAnimation {
-                timer: Timer::from_seconds(0.15, true),
-                frames: [mid_bird, up_bird, down_bird],
+            },
+            bird,
+            FlapAnimation {
+                timer: Timer::from_seconds(0.15, TimerMode::Repeating),
+                frames: animation_frames,
                 current_frame: 0,
-            })
-            .insert(PlayedAudio::default());
+            },
+            PlayedAudio::default(),
+        ));
     }
 
     #[allow(clippy::too_many_arguments, clippy::type_complexity)]
@@ -114,13 +118,13 @@ impl Bird {
         let (mut bird, mut played_audio, mut bird_transform) = bird.single_mut();
         let base_transform = base.iter().next().expect("base must be initialized first");
 
-        let front_bird = bird_transform.translation.x + Bird::width().half();
-        let bird_tail = bird_transform.translation.x - Bird::width().half();
-        let bottom_bird = bird_transform.translation.y - Bird::height().half();
-        let bird_head = bird_transform.translation.y + Bird::height().half();
+        let front_bird = bird_transform.translation.x + Bird::WIDTH.half();
+        let bird_tail = bird_transform.translation.x - Bird::WIDTH.half();
+        let bottom_bird = bird_transform.translation.y - Bird::HEIGHT.half();
+        let bird_head = bird_transform.translation.y + Bird::HEIGHT.half();
 
         // collapsed with base
-        let base_collapsed_position = Base::height().half() + base_transform.translation.y;
+        let base_collapsed_position = Base::HEIGHT.half() + base_transform.translation.y;
 
         bird.speed += bird.gravity;
 
@@ -137,11 +141,10 @@ impl Bird {
 
             // collapsed with pipe
             for (pipe_transform, flipped_pipe_transform) in pipe.iter().tuples() {
-                if bird_tail <= pipe_transform.translation.x + Pipe::width().half()
-                    && front_bird >= pipe_transform.translation.x - Pipe::width().half()
-                    && (bottom_bird <= pipe_transform.translation.y + Pipe::height().half()
-                        || bird_head
-                            >= flipped_pipe_transform.translation.y - Pipe::height().half())
+                if bird_tail <= pipe_transform.translation.x + Pipe::WIDTH.half()
+                    && front_bird >= pipe_transform.translation.x - Pipe::WIDTH.half()
+                    && (bottom_bird <= pipe_transform.translation.y + Pipe::HEIGHT.half()
+                        || bird_head >= flipped_pipe_transform.translation.y - Pipe::HEIGHT.half())
                 {
                     audio.play(asset_server.load("sounds/hit.wav"));
                     commands.insert_resource(NextState(GameState::Over));
@@ -163,7 +166,7 @@ impl Bird {
         }
 
         if bottom_bird <= base_collapsed_position {
-            bird_transform.translation.y = base_collapsed_position + Bird::height().half();
+            bird_transform.translation.y = base_collapsed_position + Bird::HEIGHT.half();
 
             if game_state.0 == GameState::Playing {
                 commands.insert_resource(NextState(GameState::Over));
@@ -186,7 +189,6 @@ impl Bird {
 
         if animation.timer.just_finished() {
             animation.current_frame = (animation.current_frame + 1) % 3;
-
             *texture = animation.frames[animation.current_frame].clone();
         }
     }

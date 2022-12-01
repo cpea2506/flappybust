@@ -12,6 +12,7 @@ use std::time::Duration;
 use background::Background;
 use base::Base;
 use bevy::{prelude::*, window::close_on_esc};
+use bevy_kira_audio::prelude::*;
 use bird::Bird;
 use datetime::DateTime;
 use gameover::{GameOver, Medal, Scoreboard};
@@ -31,22 +32,23 @@ const FPS: f32 = 1. / 100.;
 
 fn main() {
     let mut app = App::new();
-    let default_window = WindowDescriptor {
-        title: String::from("Flappybust"),
-        width: Background::width(),
-        height: Background::height(),
-        position: WindowPosition::At(Vec2::new(1050., 365.)),
-        ..default()
-    };
 
-    app.insert_resource(default_window)
-        .add_plugins(DefaultPlugins)
-        .add_loopless_state(GameState::Ready)
-        .add_plugin(StartupPlugin)
-        .add_plugin(PlayingPlugin) // in playing state
-        .add_system(input_system) // event trigger on keyboard input
-        .add_system(close_on_esc)
-        .run();
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        window: WindowDescriptor {
+            title: String::from("Flappybust"),
+            width: Background::WIDTH,
+            height: Background::HEIGHT,
+            ..default()
+        },
+        ..default()
+    }))
+    .add_plugin(AudioPlugin)
+    .add_loopless_state(GameState::Ready)
+    .add_plugin(StartupPlugin)
+    .add_plugin(PlayingPlugin) // in playing state
+    .add_system(input_system) // event trigger on keyboard input
+    .add_system(close_on_esc)
+    .run();
 }
 
 struct StartupPlugin;
@@ -54,8 +56,8 @@ struct PlayingPlugin;
 
 impl Plugin for StartupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_camera)
-            .add_startup_system_to_stage(StartupStage::PreStartup, DateTime::spawn)
+        app.add_startup_system(default_setup)
+            .add_startup_system_to_stage(StartupStage::PreStartup, DateTime::gen)
             .add_startup_system_to_stage(StartupStage::PreStartup, Scoreboard::spawn)
             .add_startup_system(Base::spawn)
             .add_startup_system(Background::spawn)
@@ -76,7 +78,6 @@ impl Plugin for PlayingPlugin {
             .add_system_set(
                 ConditionSet::new()
                     .run_in_state(GameState::Playing)
-                    .with_system(Background::moving)
                     .with_system(Pipe::moving)
                     .with_system(Score::record)
                     .into(),
@@ -107,8 +108,14 @@ impl Plugin for PlayingPlugin {
     }
 }
 
-fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle::default());
+fn default_setup(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
+}
+
+fn cleanup(mut commands: Commands, entities: Query<Entity>) {
+    for entity in &entities {
+        commands.entity(entity).despawn();
+    }
 }
 
 fn input_system(
@@ -119,15 +126,11 @@ fn input_system(
     start_message: Query<Entity, With<StartMessage>>,
 ) {
     if keyboards.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
-        match game_state.0 {
-            GameState::Ready => {
-                commands.entity(start_message.single()).despawn();
+        if let GameState::Ready = game_state.0 {
+            commands.entity(start_message.single()).despawn();
 
-                // change game state to playing
-                commands.insert_resource(NextState(GameState::Playing));
-            }
-            GameState::Over => {}
-            GameState::Playing => {}
+            // change game state to playing
+            commands.insert_resource(NextState(GameState::Playing));
         }
     }
 }
