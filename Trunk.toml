@@ -1,0 +1,7 @@
+[build]
+target = "wasm/index.html"
+
+[[hooks]]
+stage = "pre_build"
+command = "cp"
+command_arguments = ["-r", "assets/", "wasm/"]

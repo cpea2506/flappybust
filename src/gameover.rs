@@ -93,7 +93,7 @@ impl Medal {
         }
 
         if let Some(name) = medal_name {
-            *medal_texture = asset_server.load(&format!("images/medal_{name}.png"));
+            *medal_texture = asset_server.load(format!("images/medal_{name}.png"));
         }
     }
 }

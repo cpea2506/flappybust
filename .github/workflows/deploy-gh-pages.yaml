@@ -1,0 +1,28 @@
+name: deploy-gh-pages
+
+on:
+  push:
+
+env:
+  PUBLIC_URL: /flappybust/
+
+jobs:
+  release-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+      - name: Install trunk
+        uses: jetli/trunk-action@v0.2.0
+        with:
+          version: "latest"
+      - name: Trunk build
+        run: trunk build --release --public-url ${{ env.PUBLIC_URL }}
+      - name: deploy to Github Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./wasm/dist/

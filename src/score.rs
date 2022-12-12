@@ -39,12 +39,12 @@ impl Score {
         asset_server: Res<AssetServer>,
         score_board: Query<&Transform, With<Scoreboard>>,
     ) {
-        let mut score = Score::default();
-
-        score.textures = (0..10)
-            .map(|i| asset_server.load(&format!("images/{i}.png")))
-            .collect();
-
+        let score = Score {
+            textures: (0..10)
+                .map(|i| asset_server.load(format!("images/{i}.png")))
+                .collect(),
+            ..default()
+        };
         commands.insert_resource(score);
 
         commands.spawn_batch(vec![

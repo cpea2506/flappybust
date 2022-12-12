@@ -11,7 +11,7 @@ impl Background {
     pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
         commands.spawn((
             SpriteBundle {
-                texture: asset_server.load(&format!("images/bg_{}.png", datetime.raw_value())),
+                texture: asset_server.load(format!("images/bg_{}.png", datetime.raw_value())),
                 ..default()
             },
             Background,
