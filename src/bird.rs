@@ -54,7 +54,7 @@ pub struct PlayedAudio {
 
 fn load_animation_frames(asset_server: &AssetServer, bird_color: BirdColor) -> AnimationFrames {
     ["up", "mid", "down"].map(|state| {
-        asset_server.load(&format!(
+        asset_server.load(format!(
             "images/bird_{color}_{state}.png",
             color = bird_color.raw_value()
         ))

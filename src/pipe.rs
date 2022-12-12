@@ -52,7 +52,7 @@ impl Pipe {
     pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
         let mut rng = thread_rng();
         let y_between = Uniform::new(-240., -50.);
-        let texture = asset_server.load(&format!(
+        let texture = asset_server.load(format!(
             "images/pipe_{}.png",
             match datetime.into_inner() {
                 DateTime::Day => "green",
