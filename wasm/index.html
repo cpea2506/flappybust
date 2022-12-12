@@ -3,44 +3,12 @@
 <head>
     <link rel="canonical" href="https://cpea2506.github.io/flappybust/" />
     <link data-trunk rel="scss" data-inline href="/index.scss" />
-    <link data-trunk rel="copy-dir" href="/assets" />
-    <link data-trunk rel="icon" href="/assets/images/icon.png" />
-    <link data-trunk href="../Cargo.toml" rel="rust" data-typescript data-weak-refs data-reference-types data-wasm-opt="s" />
+    <link data-trunk rel="copy-dir" href="assets/" />
+    <link data-trunk rel="copy-dir" href="static/" />
+    <link rel="icon" type="image/png" href="static/icon.png" />
+    <link data-trunk href="../Cargo.toml" rel="rust" data-typescript data-wasm-opt="s" />
 </head>
 
-<body>
-    <!-- The following is a loading modal which is replaced on WASM load. -->
-    <style>
-        img {
-            max-width: 80%;
-            max-height: 200px;
-        }
-
-        svg {
-            width: 100px;
-            height: 100px;
-        }
-
-        body {
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            min-height: 100vh;
-            background: rgb(40, 40, 40);
-            color: rgb(204, 204, 204);
-        }
-    </style>
-    <img src="/assets/images/icon.png" alt="bird" />
-    <svg version=" 1.1" id="L3" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
-        y="0px" viewBox="0 0 100 100" enable-background="new 0 0 0 0" xml:space="preserve">
-        <circle fill="none" stroke="rgb(204, 204, 204)" stroke-width="4" cx="50" cy="50" r="44" style="opacity:0.5;" />
-        <circle fill="rgb(40, 40, 40)" stroke="rgb(204, 204, 204)" stroke-width="3" cx="8" cy="54" r="6">
-            <animateTransform attributeName="transform" dur="2s" type="rotate" from="0 50 48" to="360 50 52"
-                repeatCount="indefinite" />
-        </circle>
-    </svg>
-</body>
+<body />
 
 </html>
