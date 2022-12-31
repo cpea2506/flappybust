@@ -131,7 +131,7 @@ impl Bird {
         if game_state.0 == GameState::Playing {
             if keys.pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
                 if !played_audio.wing {
-                    audio.play(asset_server.load("sounds/wing.wav"));
+                    audio.play(asset_server.load("sounds/wing.ogg"));
                     played_audio.wing.on();
                 }
 
@@ -146,7 +146,7 @@ impl Bird {
                     && (bottom_bird <= pipe_transform.translation.y + Pipe::HEIGHT.half()
                         || bird_head >= flipped_pipe_transform.translation.y - Pipe::HEIGHT.half())
                 {
-                    audio.play(asset_server.load("sounds/hit.wav"));
+                    audio.play(asset_server.load("sounds/hit.ogg"));
                     commands.insert_resource(NextState(GameState::Over));
                     break;
                 }
@@ -158,7 +158,7 @@ impl Bird {
         // bird is doing free fall
         if bird.speed != bird.jump {
             if !played_audio.swoosh {
-                audio.play(asset_server.load("sounds/swoosh.wav"));
+                audio.play(asset_server.load("sounds/swoosh.ogg"));
                 played_audio.swoosh.on();
             }
 
@@ -173,7 +173,7 @@ impl Bird {
             }
 
             if !played_audio.die {
-                audio.play(asset_server.load("sounds/die.wav"));
+                audio.play(asset_server.load("sounds/die.ogg"));
                 played_audio.die.on();
             }
         }

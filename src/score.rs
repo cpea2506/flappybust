@@ -112,7 +112,7 @@ impl Score {
             if bird_transform.translation.x + Bird::WIDTH.half() > pipe_transform.translation.x
                 && !pipe.has_passed
             {
-                audio.play(asset_server.load("sounds/score.wav"));
+                audio.play(asset_server.load("sounds/score.ogg"));
 
                 score.current += 1;
                 score.highest = score.current.max(score.highest);
