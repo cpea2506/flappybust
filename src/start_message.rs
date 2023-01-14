@@ -4,7 +4,7 @@ use bevy::prelude::*;
 pub struct StartMessage;
 
 impl StartMessage {
-    pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+    fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         commands.spawn((
             SpriteBundle {
                 texture: asset_server.load("images/start_message.png"),
@@ -13,5 +13,13 @@ impl StartMessage {
             },
             StartMessage,
         ));
+    }
+}
+
+pub struct StartMessagePlugin;
+
+impl Plugin for StartMessagePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(StartMessage::spawn);
     }
 }
