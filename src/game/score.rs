@@ -1,14 +1,17 @@
+use crate::constants::SCREEN_HEIGHT;
+
 use bevy::prelude::*;
 use flappybust::{BooleanSwitcher, Math};
 use itertools::Itertools;
-use iyes_loopless::{prelude::ConditionSet, state::CurrentState};
+use iyes_loopless::{
+    prelude::{AppLooplessStateExt, IntoConditionalSystem},
+    state::CurrentState,
+};
 use std::iter::successors;
 
-use crate::{
-    audio::{AudioEvent, FlappyAudioAssets},
-    background::Background,
+use super::{
+    audio::{AudioAssets, AudioEvent},
     bird::Bird,
-    gameover::Scoreboard,
     pipe::Pipe,
     GameState,
 };
@@ -45,12 +48,8 @@ pub struct ScorePlugin;
 
 impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn).add_system_set(
-            ConditionSet::new()
-                .run_not_in_state(GameState::Ready)
-                .with_system(record)
-                .into(),
-        );
+        app.add_enter_system(GameState::Playing, spawn)
+            .add_system(record.run_in_state(GameState::Playing));
     }
 }
 
@@ -113,7 +112,7 @@ fn spawn(
 
 #[allow(clippy::type_complexity, clippy::too_many_arguments)]
 fn record(
-    audio_assets: Res<FlappyAudioAssets>,
+    audio_assets: Res<AudioAssets>,
     mut audio_event: EventWriter<AudioEvent>,
     bird: Query<&Transform, With<Bird>>,
     game_state: Res<CurrentState<GameState>>,
@@ -161,7 +160,7 @@ fn record(
             // count number of digit
             let digit_num =
                 successors(Some(score.current), |&n| (n >= 10).then_some(n / 10)).count();
-            let y_pos = Background::HEIGHT.half() - 10. - Score::HEIGHT.half();
+            let y_pos = SCREEN_HEIGHT.half() - 10. - Score::HEIGHT.half();
 
             for (rank, mut transform, mut texture) in &mut score_rank {
                 match (digit_num, rank.0) {

@@ -1,19 +1,15 @@
-use crate::DateTime;
+use super::{DateTime, GameState};
 use bevy::prelude::*;
+use iyes_loopless::prelude::AppLooplessStateExt;
 
 #[derive(Component, Default, Clone, Copy)]
-pub struct Background;
-
-impl Background {
-    pub const WIDTH: f32 = 288.;
-    pub const HEIGHT: f32 = 512.;
-}
+struct Background;
 
 pub struct BackgroundPlugin;
 
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn);
+        app.add_enter_system(GameState::Ready, spawn);
     }
 }
 

@@ -1,25 +1,45 @@
-use crate::{background::Background, DateTime, GameState};
+use crate::{constants::SCREEN_WIDTH, game::DateTime, GameState};
 use bevy::prelude::*;
 use flappybust::Math;
 use itertools::Itertools;
-use iyes_loopless::prelude::ConditionSet;
+use iyes_loopless::prelude::*;
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Pipe {
-    pub translation: Vec3,
+    pub size: Vec2,
+    pub flip_y: bool,
     pub hidden: bool,
+
+    translation: Vec3,
 }
 
 impl Pipe {
     pub const WIDTH: f32 = 52.;
     pub const HEIGHT: f32 = 320.;
 
-    fn new(x: f32, y: f32) -> Self {
+    fn new(x: f32, y: f32, flip_y: bool) -> Self {
         Pipe {
             translation: Vec3::new(x, y, 0.1),
-            hidden: false,
+            size: Vec2::new(Self::WIDTH, Self::HEIGHT),
+            flip_y,
+            ..default()
         }
+    }
+
+    fn generate_bundle(self, texture: &Handle<Image>) -> (SpriteBundle, Self) {
+        (
+            SpriteBundle {
+                sprite: Sprite {
+                    flip_y: self.flip_y,
+                    ..default()
+                },
+                texture: texture.clone(),
+                transform: Transform::from_translation(self.translation),
+                ..default()
+            },
+            self,
+        )
     }
 }
 
@@ -27,12 +47,8 @@ pub struct PipePlugin;
 
 impl Plugin for PipePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn).add_system_set(
-            ConditionSet::new()
-                .run_in_state(GameState::Playing)
-                .with_system(moving)
-                .into(),
-        );
+        app.add_enter_system(GameState::Playing, spawn)
+            .add_system(moving.run_in_state(GameState::Playing));
     }
 }
 
@@ -50,39 +66,25 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<D
     // TODO: spawn first 3 pipe and generate more later
     // spawn first 1000 pipes
     (0..1000).for_each(|i| {
-        let pipe = Pipe::new(360. + 175. * i as f32, y_between.sample(&mut rng));
-
         let gap = 100.;
-        let flipped_pipe = Pipe::new(pipe.translation.x, pipe.translation.y + gap + Pipe::HEIGHT);
+
+        let pipe = Pipe::new(360. + 175. * i as f32, y_between.sample(&mut rng), false);
+        let flipped_pipe = Pipe::new(
+            pipe.translation.x,
+            pipe.translation.y + gap + Pipe::HEIGHT,
+            true,
+        );
 
         commands.spawn_batch(vec![
-            (
-                SpriteBundle {
-                    texture: texture.clone(),
-                    transform: Transform::from_translation(pipe.translation),
-                    ..default()
-                },
-                pipe,
-            ),
-            (
-                SpriteBundle {
-                    sprite: Sprite {
-                        flip_y: true,
-                        ..default()
-                    },
-                    texture: texture.clone(),
-                    transform: Transform::from_translation(flipped_pipe.translation),
-                    ..default()
-                },
-                flipped_pipe,
-            ),
+            pipe.generate_bundle(&texture),
+            flipped_pipe.generate_bundle(&texture),
         ]);
     });
 }
 
 fn moving(mut commands: Commands, mut pipe: Query<(Entity, &mut Transform), With<Pipe>>) {
     let half_pipe_width = Pipe::WIDTH.half();
-    let half_background_width = Background::WIDTH.half();
+    let half_screen_width = SCREEN_WIDTH.half();
 
     for ((pipe_entity, mut pipe_transform), (flipped_pipe_entity, mut flipped_pipe_transform)) in
         pipe.iter_mut().tuples()
@@ -90,7 +92,7 @@ fn moving(mut commands: Commands, mut pipe: Query<(Entity, &mut Transform), With
         pipe_transform.translation.x -= 1.;
         flipped_pipe_transform.translation.x -= 1.;
 
-        let outside_screen = -half_pipe_width - half_background_width;
+        let outside_screen = -half_pipe_width - half_screen_width;
 
         // remove pipes that are outside of screen
         if pipe_transform.translation.x <= outside_screen {

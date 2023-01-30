@@ -1,10 +1,12 @@
-use crate::{background::Background, GameState};
+use crate::{constants::SCREEN_HEIGHT, GameState};
 use bevy::prelude::*;
 use flappybust::{ternary, Math};
 use iyes_loopless::prelude::*;
 
 #[derive(Component, Default)]
 pub struct Base {
+    pub size: Vec2,
+
     translation: Vec3,
     secondary: bool,
 }
@@ -12,11 +14,12 @@ pub struct Base {
 impl Base {
     pub const WIDTH: f32 = 336.;
     pub const HEIGHT: f32 = 112.;
-    const END_POINT: f32 = Base::WIDTH - 24.;
+    const RESET_POINT: f32 = Base::WIDTH - 24.;
 
     fn new(x: f32, y: f32, secondary: bool) -> Self {
         Base {
             translation: Vec3::new(x, y, 0.2),
+            size: Vec2::new(Self::WIDTH, Self::HEIGHT),
             secondary,
         }
     }
@@ -26,17 +29,13 @@ pub struct BasePlugin;
 
 impl Plugin for BasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn).add_system_set(
-            ConditionSet::new()
-                .run_not_in_state(GameState::Over)
-                .with_system(moving)
-                .into(),
-        );
+        app.add_enter_system(GameState::Ready, spawn)
+            .add_system(moving.run_not_in_state(GameState::Over));
     }
 }
 
 fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let base = Base::new(0., Base::HEIGHT.half() - Background::HEIGHT.half(), false);
+    let base = Base::new(0., Base::HEIGHT.half() - SCREEN_HEIGHT.half(), false);
     let secondary_base = Base::new(Base::WIDTH, base.translation.y, true);
     let texture = asset_server.load("images/base.png");
 
@@ -62,8 +61,8 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn moving(mut base: Query<(&mut Base, &mut Transform)>) {
     for (mut base, mut transform) in &mut base {
-        base.translation.x = (base.translation.x - 1.) % Base::END_POINT;
+        base.translation.x = (base.translation.x - 1.) % Base::RESET_POINT;
         transform.translation.x =
-            base.translation.x + ternary!(base.secondary, Base::END_POINT, 0.);
+            base.translation.x + ternary!(base.secondary, Base::RESET_POINT, 0.);
     }
 }
