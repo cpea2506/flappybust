@@ -15,7 +15,7 @@ pub enum DateTime {
 
 impl Distribution<DateTime> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> DateTime {
-        ternary!(rng.gen(), DateTime::Day, DateTime::Night)
+        ternary!(rng.gen_bool(0.5), DateTime::Day, DateTime::Night)
     }
 }
 
