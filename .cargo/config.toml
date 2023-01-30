@@ -17,5 +17,5 @@ runner = "wasm-server-runner"
 opt-level = 3
 
 [profile.release]
-lto = true
+lto = "thin"
 opt-level = 's'
