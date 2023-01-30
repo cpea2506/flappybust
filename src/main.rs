@@ -44,7 +44,7 @@ fn main() {
         },
         ..default()
     }))
-    .add_system(default_setup)
+    .add_startup_system(default_setup)
     .add_loopless_state(GameState::Ready)
     .insert_resource(random::<DateTime>())
     .add_plugin(AudioPlugin)
