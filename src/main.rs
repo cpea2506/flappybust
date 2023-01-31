@@ -1,6 +1,5 @@
 mod constants;
 mod game;
-mod utils;
 
 use bevy::{prelude::*, window::close_on_esc};
 use bevy_kira_audio::prelude::*;
