@@ -9,6 +9,7 @@ pub struct Base {
 
     translation: Vec3,
     secondary: bool,
+    pub collider_pos: f32,
 }
 
 impl Base {
@@ -21,7 +22,19 @@ impl Base {
             translation: Vec3::new(x, y, 0.2),
             size: Vec2::new(Self::WIDTH, Self::HEIGHT),
             secondary,
+            collider_pos: y + Self::HEIGHT.half(),
         }
+    }
+
+    fn generate_bundle(self, texture: &Handle<Image>) -> (SpriteBundle, Self) {
+        (
+            SpriteBundle {
+                texture: texture.clone(),
+                transform: Transform::from_translation(self.translation),
+                ..default()
+            },
+            self,
+        )
     }
 }
 
@@ -40,22 +53,8 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     let texture = asset_server.load("images/base.png");
 
     commands.spawn_batch(vec![
-        (
-            SpriteBundle {
-                texture: texture.clone(),
-                transform: Transform::from_translation(base.translation),
-                ..default()
-            },
-            base,
-        ),
-        (
-            SpriteBundle {
-                texture,
-                transform: Transform::from_translation(secondary_base.translation),
-                ..default()
-            },
-            secondary_base,
-        ),
+        base.generate_bundle(&texture),
+        secondary_base.generate_bundle(&texture),
     ]);
 }
 
