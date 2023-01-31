@@ -132,9 +132,7 @@ fn record(
         if bird_transform.translation.x + Bird::WIDTH.half() > pipe_transform.translation.x
             && !pipe.hidden
         {
-            audio_event.send(AudioEvent {
-                audio: audio_assets.score.clone(),
-            });
+            audio_event.send(AudioEvent::new(&audio_assets.score, false));
 
             score.current += 1;
             score.highest = score.current.max(score.highest);

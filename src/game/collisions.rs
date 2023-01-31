@@ -81,8 +81,8 @@ fn on_collision(
     }
 
     audio_event.send_batch(vec![
-        AudioEvent::new(audio_assets.die.clone()),
-        AudioEvent::new(audio_assets.hit.clone()),
+        AudioEvent::new(&audio_assets.die, false),
+        AudioEvent::new(&audio_assets.hit, false),
     ]);
 
     commands.insert_resource(NextState(GameState::Over));

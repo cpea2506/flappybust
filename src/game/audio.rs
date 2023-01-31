@@ -2,13 +2,20 @@ use bevy::prelude::*;
 use bevy_asset_loader::prelude::{AssetCollection, AssetCollectionApp};
 use bevy_kira_audio::prelude::*;
 
+#[derive(Resource)]
+pub struct ThemeSongHandle(pub Handle<AudioInstance>);
+
 pub struct AudioEvent {
-    pub audio: Handle<AudioSource>,
+    audio: Handle<AudioSource>,
+    looped: bool,
 }
 
 impl AudioEvent {
-    pub fn new(audio: Handle<AudioSource>) -> Self {
-        AudioEvent { audio }
+    pub fn new(audio: &Handle<AudioSource>, looped: bool) -> Self {
+        AudioEvent {
+            audio: audio.clone(),
+            looped,
+        }
     }
 }
 
@@ -42,12 +49,22 @@ impl Plugin for AudioPlugin {
     }
 }
 
-fn on_audio_event(audio: Res<Audio>, mut audio_events: EventReader<AudioEvent>) {
+fn on_audio_event(
+    mut commands: Commands,
+    audio: Res<Audio>,
+    mut audio_events: EventReader<AudioEvent>,
+) {
     if audio_events.is_empty() {
         return;
     }
 
     for event in audio_events.iter() {
-        audio.play(event.audio.clone());
+        if event.looped {
+            let handle = audio.play(event.audio.clone()).looped().handle();
+
+            commands.insert_resource(ThemeSongHandle(handle))
+        } else {
+            audio.play(event.audio.clone());
+        }
     }
 }

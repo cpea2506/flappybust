@@ -2,7 +2,7 @@ mod collisions;
 use collisions::CollisionPlugin;
 
 mod audio;
-use audio::AudioPlugin;
+use audio::{AudioAssets, AudioEvent, AudioPlugin, ThemeSongHandle};
 
 mod background;
 use background::BackgroundPlugin;
@@ -11,7 +11,7 @@ mod base;
 use base::BasePlugin;
 
 mod bird;
-use bird::BirdPlugin;
+use bird::{events::DeathEvent, BirdPlugin};
 
 mod datetime;
 use datetime::DateTime;
@@ -34,6 +34,7 @@ use iyes_loopless::prelude::*;
 use flappybust::despawn_all;
 
 use crate::GameState;
+use bevy_kira_audio::*;
 
 pub struct GamePlugin;
 
@@ -43,6 +44,8 @@ impl Plugin for GamePlugin {
             .add_plugin(AudioPlugin)
             .init_resource::<DateTime>()
             .add_exit_system(GameState::Over, init_datetime)
+            .add_enter_system(GameState::Playing, play_theme_song)
+            .add_exit_system(GameState::Playing, stop_theme_song)
             .add_plugin(StartMessagePlugin)
             .add_plugin(BackgroundPlugin)
             .add_plugin(BasePlugin)
@@ -56,4 +59,19 @@ impl Plugin for GamePlugin {
 
 fn init_datetime(mut commands: Commands) {
     commands.insert_resource(DateTime::default())
+}
+
+fn play_theme_song(mut audio_event: EventWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {
+    audio_event.send(AudioEvent::new(&audio_assets.theme, true));
+}
+
+fn stop_theme_song(
+    handle: Res<ThemeSongHandle>,
+    mut audio_instances: ResMut<Assets<AudioInstance>>,
+) {
+    if let Some(instance) = audio_instances.get_mut(&handle.0) {
+        if let PlaybackState::Playing { .. } = instance.state() {
+            instance.stop(AudioTween::default());
+        }
+    }
 }

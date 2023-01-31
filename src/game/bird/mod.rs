@@ -52,13 +52,13 @@ fn fly(
 
     if game_state.0 == GameState::Playing {
         if keys.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
-            audio_event.send(AudioEvent::new(audio_assets.wing.clone()));
+            audio_event.send(AudioEvent::new(&audio_assets.wing, false));
 
             bird.velocity = -2.35
         }
 
         if keys.just_released(KeyCode::Space) || buttons.just_released(MouseButton::Left) {
-            audio_event.send(AudioEvent::new(audio_assets.swoosh.clone()));
+            audio_event.send(AudioEvent::new(&audio_assets.swoosh, false));
         }
     }
 

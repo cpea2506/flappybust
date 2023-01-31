@@ -1,2 +1,2 @@
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct DeathEvent;
