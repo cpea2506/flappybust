@@ -9,11 +9,6 @@ public_url = "/"
 # Whether to include hash values in the output file names.
 filehash = true
 
-[[hooks]]
-stage = "pre_build"
-command = "cp"
-command_arguments = ["-r", "assets", "wasm/"]
-
 [serve]
 # The address to serve on.
 address = "127.0.0.1"
