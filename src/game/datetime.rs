@@ -1,11 +1,8 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter, Result};
 
-use bevy::prelude::*;
+use bevy::prelude::Resource;
 use flappybust::ternary;
-use rand::{
-    distributions::{Distribution, Standard},
-    Rng,
-};
+use rand::{distributions::Standard, prelude::Distribution, random, Rng};
 
 #[derive(Resource, Clone, Copy)]
 pub enum DateTime {
@@ -19,8 +16,14 @@ impl Distribution<DateTime> for Standard {
     }
 }
 
+impl Default for DateTime {
+    fn default() -> Self {
+        random::<Self>()
+    }
+}
+
 impl Display for DateTime {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         f.write_str(match self {
             DateTime::Day => "day",
             DateTime::Night => "night",

@@ -1,9 +1,11 @@
-use crate::{constants::SCREEN_WIDTH, game::DateTime, GameState};
+use crate::{constants::SCREEN_WIDTH, GameState};
 use bevy::prelude::*;
 use flappybust::Math;
 use itertools::Itertools;
 use iyes_loopless::prelude::*;
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
+
+use super::datetime::DateTime;
 
 #[derive(Component, Default)]
 pub struct Pipe {
@@ -65,7 +67,7 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<D
 
     // TODO: spawn first 3 pipe and generate more later
     // spawn first 1000 pipes
-    (0..1000).for_each(|i| {
+    (0..500).for_each(|i| {
         let gap = 100.;
 
         let pipe = Pipe::new(360. + 175. * i as f32, y_between.sample(&mut rng), false);
@@ -92,10 +94,8 @@ fn moving(mut commands: Commands, mut pipe: Query<(Entity, &mut Transform), With
         pipe_transform.translation.x -= 1.;
         flipped_pipe_transform.translation.x -= 1.;
 
-        let outside_screen = -half_pipe_width - half_screen_width;
-
         // remove pipes that are outside of screen
-        if pipe_transform.translation.x <= outside_screen {
+        if pipe_transform.translation.x <= -half_pipe_width - half_screen_width {
             commands.entity(pipe_entity).despawn();
             commands.entity(flipped_pipe_entity).despawn();
         }

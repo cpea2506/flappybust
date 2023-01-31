@@ -1,4 +1,5 @@
 use bevy::{prelude::*, sprite::collide_aabb::collide};
+use flappybust::Math;
 use itertools::Itertools;
 use iyes_loopless::prelude::*;
 
@@ -7,12 +8,12 @@ use crate::GameState;
 use super::{
     audio::{AudioAssets, AudioEvent},
     base::Base,
-    bird::Bird,
+    bird::{components::Bird, events::DeathEvent},
     pipe::Pipe,
 };
 
 #[derive(Default)]
-struct CollisionEvent;
+pub struct CollisionEvent;
 
 pub struct CollisionPlugin;
 
@@ -25,30 +26,35 @@ impl Plugin for CollisionPlugin {
 }
 
 fn check_collision(
-    bird: Query<(&mut Transform, &Bird)>,
+    mut bird: Query<(&mut Transform, &Bird)>,
     pipes: Query<(&Transform, &Pipe), Without<Bird>>,
-    bases: Query<(&Transform, &Base), (Without<Bird>, Without<Pipe>)>,
+    bases: Query<&Base, (Without<Bird>, Without<Pipe>)>,
     game_state: Res<CurrentState<GameState>>,
     mut collision_event: EventWriter<CollisionEvent>,
+    mut death_event: EventWriter<DeathEvent>,
 ) {
-    let (bird_transform, bird) = bird.single();
-
-    let bird_collide =
-        |b_pos: Vec3, b_size: Vec2| collide(bird_transform.translation, bird.size, b_pos, b_size);
+    let (mut bird_transform, bird) = bird.single_mut();
 
     // there are two bases (for animate purpose) but we only need to take one
     // because bird only collides with the top of any base
-    let (base_transform, base) = bases.iter().next().expect("base must be initialized first");
+    let base = bases.iter().next().expect("base must be initialized first");
 
-    let base_collision = bird_collide(base_transform.translation, base.size);
+    // check if bird bottom collides with top base
+    if bird_transform.translation.y - bird.size.y.half() <= base.collider_pos {
+        // this is for bird to lay on the ground
+        bird_transform.translation.y = base.collider_pos + bird.size.y.half();
 
-    if base_collision.is_some() {
+        death_event.send_default();
         collision_event.send_default();
     }
 
     // check pipe collision only on playing state
     // to prevent each frame check when bird falls inside a pipe
     if game_state.0 == GameState::Playing {
+        let bird_collide = |b_pos: Vec3, b_size: Vec2| {
+            collide(bird_transform.translation, bird.size, b_pos, b_size)
+        };
+
         // collapsed with pipe
         for ((pipe_transform, pipe), (flipped_pipe_transform, flipped_pipe)) in
             pipes.iter().tuples()
@@ -74,9 +80,10 @@ fn on_collision(
         return;
     }
 
-    audio_event.send(AudioEvent {
-        audio: audio_assets.die.clone(),
-    });
+    audio_event.send_batch(vec![
+        AudioEvent::new(audio_assets.die.clone()),
+        AudioEvent::new(audio_assets.hit.clone()),
+    ]);
 
     commands.insert_resource(NextState(GameState::Over));
 }

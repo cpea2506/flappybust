@@ -11,7 +11,7 @@ use std::iter::successors;
 
 use super::{
     audio::{AudioAssets, AudioEvent},
-    bird::Bird,
+    bird::components::Bird,
     pipe::Pipe,
     GameState,
 };

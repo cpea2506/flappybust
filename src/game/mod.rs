@@ -30,9 +30,10 @@ use start_message::StartMessagePlugin;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-use rand::random;
 
-use crate::{utils::despawn_all, GameState};
+use flappybust::despawn_all;
+
+use crate::GameState;
 
 pub struct GamePlugin;
 
@@ -40,7 +41,8 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_exit_system(GameState::Over, despawn_all)
             .add_plugin(AudioPlugin)
-            .insert_resource(random::<DateTime>())
+            .init_resource::<DateTime>()
+            .add_exit_system(GameState::Over, init_datetime)
             .add_plugin(StartMessagePlugin)
             .add_plugin(BackgroundPlugin)
             .add_plugin(BasePlugin)
@@ -50,4 +52,8 @@ impl Plugin for GamePlugin {
             .add_plugin(ScorePlugin)
             .add_plugin(GameOverPlugin);
     }
+}
+
+fn init_datetime(mut commands: Commands) {
+    commands.insert_resource(DateTime::default())
 }

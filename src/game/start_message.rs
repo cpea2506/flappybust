@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use iyes_loopless::prelude::AppLooplessStateExt;
 
-use crate::{utils::despawn, GameState};
+use flappybust::despawn;
+
+use crate::GameState;
 
 #[derive(Component)]
 struct StartMessage;

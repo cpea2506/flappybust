@@ -6,6 +6,12 @@ pub struct AudioEvent {
     pub audio: Handle<AudioSource>,
 }
 
+impl AudioEvent {
+    pub fn new(audio: Handle<AudioSource>) -> Self {
+        AudioEvent { audio }
+    }
+}
+
 #[derive(AssetCollection, Resource)]
 pub struct AudioAssets {
     #[asset(path = "sounds/theme.ogg")]
