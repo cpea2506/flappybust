@@ -60,7 +60,11 @@ fn on_audio_event(
 
     for event in audio_events.iter() {
         if event.looped {
-            let handle = audio.play(event.audio.clone()).looped().handle();
+            let handle = audio
+                .play(event.audio.clone())
+                .with_volume(0.3)
+                .looped()
+                .handle();
 
             commands.insert_resource(ThemeSongHandle(handle))
         } else {
