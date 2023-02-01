@@ -5,7 +5,7 @@ use itertools::Itertools;
 use iyes_loopless::prelude::*;
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
 
-use super::datetime::DateTime;
+use super::resources::DateTime;
 
 #[derive(Component, Default)]
 pub struct Pipe {

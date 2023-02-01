@@ -6,7 +6,7 @@ use iyes_loopless::state::CurrentState;
 
 use events::DeathEvent;
 
-use super::{audio::*, GameState};
+use super::{audio::*, resources::BouncingState, GameState};
 use bevy::prelude::*;
 use iyes_loopless::prelude::{AppLooplessStateExt, IntoConditionalSystem};
 use rand::random;
@@ -18,7 +18,9 @@ impl Plugin for BirdPlugin {
         app.add_event::<DeathEvent>()
             .add_enter_system(GameState::Ready, spawn)
             .add_system(flap.run_not_in_state(GameState::Over))
-            .add_system(fly.run_not_in_state(GameState::Ready));
+            .add_system(fly.run_not_in_state(GameState::Ready))
+            .init_resource::<BouncingState>()
+            .add_system(bouncing_y.run_in_state(GameState::Ready));
     }
 }
 
@@ -81,5 +83,32 @@ fn flap(time: Res<Time>, mut bird: Query<(&mut FlapAnimation, &mut Handle<Image>
     if animation.timer.just_finished() {
         animation.current_frame = (animation.current_frame + 1) % 3;
         *texture = animation.frames[animation.current_frame].clone();
+    }
+}
+
+fn bouncing_y(
+    mut commands: Commands,
+    mut bird: Query<(&mut Transform, &Bird)>,
+    bouncing_state: Res<BouncingState>,
+) {
+    let (mut bird_transform, bird) = bird.single_mut();
+
+    let bouncing_radius = 3.;
+
+    let distance = bird_transform.translation.y - bird.translation.y;
+
+    if distance >= bouncing_radius {
+        commands.insert_resource(BouncingState::DOWN);
+    } else if distance <= -bouncing_radius {
+        commands.insert_resource(BouncingState::UP);
+    }
+
+    match bouncing_state.into_inner() {
+        BouncingState::UP => {
+            bird_transform.translation.y += 0.5;
+        }
+        BouncingState::DOWN => {
+            bird_transform.translation.y -= 0.5;
+        }
     }
 }

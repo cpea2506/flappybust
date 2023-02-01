@@ -10,11 +10,11 @@ use background::BackgroundPlugin;
 mod base;
 use base::BasePlugin;
 
-mod bird;
-use bird::{events::DeathEvent, BirdPlugin};
+mod resources;
+use resources::DateTime;
 
-mod datetime;
-use datetime::DateTime;
+mod bird;
+use bird::BirdPlugin;
 
 mod game_over;
 use game_over::GameOverPlugin;

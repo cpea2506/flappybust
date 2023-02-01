@@ -2,7 +2,7 @@ use crate::{constants::SCREEN_WIDTH, GameState};
 use bevy::prelude::*;
 use iyes_loopless::prelude::{AppLooplessStateExt, IntoConditionalSystem};
 
-use super::datetime::DateTime;
+use super::resources::DateTime;
 
 #[derive(Component, Default, Clone, Copy)]
 struct Background {

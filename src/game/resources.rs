@@ -1,8 +1,14 @@
-use std::fmt::{Display, Formatter, Result};
-
 use bevy::prelude::Resource;
 use flappybust::ternary;
 use rand::{distributions::Standard, prelude::Distribution, random, Rng};
+use std::fmt::{Display, Formatter, Result};
+
+#[derive(Resource, Default)]
+pub enum BouncingState {
+    #[default]
+    UP,
+    DOWN,
+}
 
 #[derive(Resource, Clone, Copy)]
 pub enum DateTime {
