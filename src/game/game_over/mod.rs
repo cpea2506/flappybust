@@ -7,6 +7,8 @@ use iyes_loopless::prelude::*;
 
 use crate::GameState;
 
+use super::audio::{AudioAssets, AudioEvent};
+use super::bird::events::DeathEvent;
 use super::score::Score;
 
 #[derive(Component)]
@@ -23,7 +25,8 @@ impl Plugin for GameOverPlugin {
                 .with_system(scoreboard_spawn)
                 .with_system(medal_spawn)
                 .with_system(restart_button_spawn),
-        );
+        )
+        .add_system(medal_scale.run_in_state(GameState::Over));
     }
 }
 
@@ -38,7 +41,7 @@ fn gameover_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 }
 
-pub fn restart_button_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn restart_button_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(SpriteBundle {
         texture: asset_server.load("images/restart_btn.png"),
         transform: Transform::from_xyz(0., -35., 0.2),
@@ -46,7 +49,7 @@ pub fn restart_button_spawn(mut commands: Commands, asset_server: Res<AssetServe
     });
 }
 
-pub fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<AssetServer>) {
+fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<AssetServer>) {
     let mut medal_name = None;
 
     if score.current >= 10 && score.current < 20 {
@@ -61,7 +64,12 @@ pub fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<
 
     commands.spawn((
         SpriteBundle {
-            transform: Transform::from_xyz(-65., 47., 0.2),
+            transform: Transform {
+                translation: Vec3::new(-65., 47., 0.4),
+                scale: Vec3::new(40., 40., 0.),
+                ..Transform::IDENTITY
+            },
+            visibility: Visibility::INVISIBLE,
             texture: match medal_name {
                 Some(name) => asset_server.load(format!("images/medal_{name}.png")),
                 None => DEFAULT_IMAGE_HANDLE.typed(),
@@ -72,7 +80,34 @@ pub fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<
     ));
 }
 
-pub fn scoreboard_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn medal_scale(
+    mut medal: Query<(&mut Transform, &mut Visibility), With<Medal>>,
+    mut audio_event: EventWriter<AudioEvent>,
+    audio_assets: Res<AudioAssets>,
+    death_event: EventReader<DeathEvent>,
+) {
+    if death_event.is_empty() {
+        return;
+    }
+
+    let (mut transform, mut visibility) = medal.single_mut();
+
+    visibility.is_visible = true;
+
+    // scale both xy for circle
+    let scale_direction = Vec3::X + Vec3::Y;
+
+    // scale to orignal state
+    transform.scale = (transform.scale - scale_direction).clamp_length_min(Vec3::ONE.length());
+
+    // play audio if and only if the scale length reachs
+    // (orignal + scale_direction) length
+    if transform.scale.length() == (Vec3::X + Vec3::Y + scale_direction).length() {
+        audio_event.send(AudioEvent::new(&audio_assets.ding, false));
+    }
+}
+
+fn scoreboard_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SpriteBundle {
             transform: Transform::from_xyz(0., 57., 0.2),

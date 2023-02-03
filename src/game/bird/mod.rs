@@ -79,7 +79,7 @@ fn fly(
     bird.velocity += bird.gravity;
 
     bird_transform.translation.y -= bird.velocity;
-    bird_transform.rotation = Quat::from_rotation_z(dbg!(bird.rotation));
+    bird_transform.rotation = Quat::from_rotation_z(bird.rotation);
 }
 
 fn flap(time: Res<Time>, mut bird: Query<(&mut FlapAnimation, &mut Handle<Image>), With<Bird>>) {
