@@ -1,4 +1,4 @@
-mod components;
+pub mod components;
 use components::*;
 
 use bevy::prelude::*;
@@ -61,7 +61,7 @@ pub fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<
 
     commands.spawn((
         SpriteBundle {
-            transform: Transform::from_xyz(-65., 47., 0.3),
+            transform: Transform::from_xyz(-65., 47., 0.2),
             texture: match medal_name {
                 Some(name) => asset_server.load(format!("images/medal_{name}.png")),
                 None => DEFAULT_IMAGE_HANDLE.typed(),

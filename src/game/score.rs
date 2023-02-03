@@ -48,16 +48,13 @@ pub struct ScorePlugin;
 
 impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Playing, spawn)
-            .add_system(record.run_in_state(GameState::Playing));
+        app.add_enter_system(GameState::Playing, playing_score_spawn)
+            .add_enter_system(GameState::Over, over_score_spawn)
+            .add_system(record.run_not_in_state(GameState::Ready));
     }
 }
 
-fn spawn(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    // score_board: Query<&Transform, With<Scoreboard>>,
-) {
+fn playing_score_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     let score = Score {
         textures: (0..10)
             .map(|i| asset_server.load(format!("images/{i}.png")))
@@ -72,45 +69,38 @@ fn spawn(
         (SpriteBundle::default(), ScoreRank(Rank::Ten)),
         (SpriteBundle::default(), ScoreRank(Rank::Unit)),
     ]);
-
-    // let score_board = score_board.single();
-    // let text = Text::from_section(
-    //     "",
-    //     TextStyle {
-    //         font: asset_server.load("fonts/Teko-Bold.ttf"),
-    //         font_size: 45.0,
-    //         color: Color::WHITE,
-    //     },
-    // );
-
-    // commands.spawn((
-    //     Text2dBundle {
-    //         text: text.clone(),
-    //         transform: Transform::from_xyz(
-    //             score_board.translation.x + 58.,
-    //             score_board.translation.y + 30.,
-    //             0.15,
-    //         ),
-    //         ..default()
-    //     },
-    //     ScoreText,
-    // ));
-
-    // commands.spawn((
-    //     Text2dBundle {
-    //         text,
-    //         transform: Transform::from_xyz(
-    //             score_board.translation.x + 58.,
-    //             score_board.translation.y - 18.,
-    //             0.15,
-    //         ),
-    //         ..default()
-    //     },
-    //     HighScoreText,
-    // ));
 }
 
-#[allow(clippy::type_complexity, clippy::too_many_arguments)]
+/// score display in scoreboard in Over state
+fn over_score_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let text = Text::from_section(
+        "",
+        TextStyle {
+            font: asset_server.load("fonts/Teko-Bold.ttf"),
+            font_size: 45.0,
+            color: Color::WHITE,
+        },
+    );
+
+    commands.spawn((
+        Text2dBundle {
+            text: text.clone(),
+            transform: Transform::from_xyz(58., 87., 0.3),
+            ..default()
+        },
+        ScoreText,
+    ));
+
+    commands.spawn((
+        Text2dBundle {
+            text,
+            transform: Transform::from_xyz(58., 39., 0.3),
+            ..default()
+        },
+        HighScoreText,
+    ));
+}
+
 fn record(
     audio_assets: Res<AudioAssets>,
     mut audio_event: EventWriter<AudioEvent>,
@@ -147,11 +137,11 @@ fn record(
 
     match game_state.0 {
         GameState::Over => {
-            // let mut score_text = score_text.single_mut();
-            // score_text.sections[0].value = score.current.to_string();
+            let mut score_text = score_text.single_mut();
+            score_text.sections[0].value = score.current.to_string();
 
-            // let mut best_score_text = hight_score_text.single_mut();
-            // best_score_text.sections[0].value = score.highest.to_string();
+            let mut best_score_text = hight_score_text.single_mut();
+            best_score_text.sections[0].value = score.highest.to_string();
         }
         _ => {
             // update texture base on score rank
