@@ -52,11 +52,17 @@ fn fly(
 ) {
     let (mut bird, mut bird_transform) = bird.single_mut();
 
+    // Rotate down at min -90deg and rotate up at max 17deg
+    bird.rotation = (bird.rotation - 1. / 40.).clamp(-90f32.to_radians(), 17f32.to_radians());
+
     if game_state.0 == GameState::Playing {
         if keys.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
             audio_event.send(AudioEvent::new(&audio_assets.wing, false));
 
-            bird.velocity = -2.35
+            bird.velocity = -2.35;
+
+            // rotate bird a 17deg angle
+            bird.rotation = 17f32.to_radians();
         }
 
         if keys.just_released(KeyCode::Space) || buttons.just_released(MouseButton::Left) {
@@ -73,6 +79,7 @@ fn fly(
     bird.velocity += bird.gravity;
 
     bird_transform.translation.y -= bird.velocity;
+    bird_transform.rotation = Quat::from_rotation_z(dbg!(bird.rotation));
 }
 
 fn flap(time: Res<Time>, mut bird: Query<(&mut FlapAnimation, &mut Handle<Image>), With<Bird>>) {

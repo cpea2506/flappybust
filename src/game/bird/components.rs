@@ -54,6 +54,7 @@ pub struct Bird {
     pub translation: Vec3,
     pub velocity: f32,
     pub gravity: f32,
+    pub rotation: f32,
 }
 
 impl Bird {
@@ -66,6 +67,7 @@ impl Bird {
             velocity: 0.,
             size: Vec2::new(Self::WIDTH, Self::HEIGHT),
             gravity: 0.098, // 9.8 m/s^2
+            rotation: 0.,
         }
     }
 }

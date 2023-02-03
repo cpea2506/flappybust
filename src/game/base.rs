@@ -19,7 +19,7 @@ impl Base {
 
     fn new(x: f32, y: f32, secondary: bool) -> Self {
         Base {
-            translation: Vec3::new(x, y, 0.2),
+            translation: Vec3::new(x, y, 0.4),
             size: Vec2::new(Self::WIDTH, Self::HEIGHT),
             secondary,
             collider_pos: y + Self::HEIGHT.half(),
