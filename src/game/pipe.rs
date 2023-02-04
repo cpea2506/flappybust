@@ -66,7 +66,7 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<D
     ));
 
     // TODO: spawn first 3 pipe and generate more later
-    // spawn first 1000 pipes
+    // spawn first 500 pipes
     (0..500).for_each(|i| {
         let gap = 100.;
 
