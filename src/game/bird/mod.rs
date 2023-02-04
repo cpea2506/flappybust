@@ -53,7 +53,7 @@ fn fly(
     let (mut bird, mut bird_transform) = bird.single_mut();
 
     // Rotate down at min -90deg and rotate up at max 25deg
-    bird.rotation = (bird.rotation - 1. / 40.).clamp(-90f32.to_radians(), 25f32.to_radians());
+    bird.rotation = (bird.rotation - 40f32.recip()).clamp(-90f32.to_radians(), 25f32.to_radians());
 
     if game_state.0 == GameState::Playing {
         if keys.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
