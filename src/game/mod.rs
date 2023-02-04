@@ -69,9 +69,8 @@ fn stop_theme_song(
     handle: Res<ThemeSongHandle>,
     mut audio_instances: ResMut<Assets<AudioInstance>>,
 ) {
-    if let Some(instance) = audio_instances.get_mut(&handle.0) {
-        if let PlaybackState::Playing { .. } = instance.state() {
-            instance.stop(AudioTween::default());
-        }
+    if let Some(instance) = audio_instances.get_mut(&handle.0) &&
+    let PlaybackState::Playing { .. } = instance.state() {
+        instance.stop(AudioTween::default());
     }
 }
