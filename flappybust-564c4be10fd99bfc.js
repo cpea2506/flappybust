@@ -1797,7 +1797,7 @@ function initSync(module) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('flappybust-68c0d4b431e8ecc4_bg.wasm', import.meta.url);
+        input = new URL('flappybust-564c4be10fd99bfc_bg.wasm', import.meta.url);
     }
     const imports = getImports();
 
