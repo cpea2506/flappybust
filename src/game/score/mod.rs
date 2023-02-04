@@ -66,6 +66,7 @@ fn over_score_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         Text2dBundle {
             text: text.clone(),
+            visibility: Visibility::INVISIBLE,
             transform: Transform::from_xyz(58., 87., 0.3),
             ..default()
         },
@@ -75,6 +76,7 @@ fn over_score_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         Text2dBundle {
             text,
+            visibility: Visibility::INVISIBLE,
             transform: Transform::from_xyz(58., 39., 0.3),
             ..default()
         },

@@ -1,6 +1,9 @@
 pub mod components;
 use components::*;
 
+mod events;
+use events::*;
+
 use bevy::prelude::*;
 use bevy::render::texture::DEFAULT_IMAGE_HANDLE;
 use iyes_loopless::prelude::*;
@@ -9,19 +12,26 @@ use crate::GameState;
 
 use super::audio::{AudioAssets, AudioEvent};
 use super::bird::events::DeathEvent;
-use super::score::components::Score;
+use super::score::components::{HighScoreText, Score, ScoreText};
 
 pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system_set(
-            GameState::Over,
-            SystemSet::new()
-                .with_system(gameover_spawn)
-                .with_system(medal_spawn),
-        )
-        .add_system(medal_scale.run_in_state(GameState::Over));
+        app.add_event::<ScoreboardEvent>()
+            .add_enter_system_set(
+                GameState::Over,
+                SystemSet::new()
+                    .with_system(gameover_spawn)
+                    .with_system(medal_spawn),
+            )
+            .add_system_set(
+                ConditionSet::new()
+                    .run_in_state(GameState::Over)
+                    .with_system(medal_scale)
+                    .with_system(scoreboard_moving_up)
+                    .into(),
+            );
     }
 }
 
@@ -37,11 +47,14 @@ fn gameover_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands.spawn((
         SpriteBundle {
-            transform: Transform::from_xyz(0., 57., 0.2),
+            transform: Transform::from_xyz(0., -199., 0.2),
             texture: asset_server.load("images/scoreboard.png"),
             ..default()
         },
-        Scoreboard,
+        Scoreboard {
+            velocity: 0.,
+            gravity: 0.15,
+        },
     ));
 
     commands.spawn((
@@ -52,6 +65,29 @@ fn gameover_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         RestartButton,
     ));
+}
+
+fn scoreboard_moving_up(
+    mut scoreboard: Query<(&mut Transform, &mut Scoreboard)>,
+    mut score_text: Query<&mut Visibility, With<ScoreText>>,
+    mut high_score_text: Query<&mut Visibility, (With<HighScoreText>, Without<ScoreText>)>,
+    mut scoreboard_event: EventWriter<ScoreboardEvent>,
+) {
+    let (mut transform, mut scoreboard) = scoreboard.single_mut();
+
+    scoreboard.velocity += scoreboard.gravity;
+
+    transform.translation.y = (transform.translation.y + scoreboard.velocity).clamp(-199., 57.);
+
+    if transform.translation.y == 57. {
+        let mut score_text = score_text.single_mut();
+        let mut high_score_text = high_score_text.single_mut();
+
+        score_text.toggle();
+        high_score_text.toggle();
+
+        scoreboard_event.send_default();
+    }
 }
 
 fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<AssetServer>) {
@@ -70,8 +106,9 @@ fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<Asse
     commands.spawn((
         SpriteBundle {
             transform: Transform {
+                // -65., 47.
                 translation: Vec3::new(-65., 47., 0.4),
-                scale: Vec3::new(40., 40., 0.),
+                scale: Vec3::new(25., 25., 0.),
                 ..Transform::IDENTITY
             },
             visibility: Visibility::INVISIBLE,
@@ -90,8 +127,9 @@ fn medal_scale(
     mut audio_event: EventWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
     death_event: EventReader<DeathEvent>,
+    scoreboard_event: EventReader<ScoreboardEvent>,
 ) {
-    if death_event.is_empty() {
+    if scoreboard_event.is_empty() || death_event.is_empty() {
         return;
     }
 

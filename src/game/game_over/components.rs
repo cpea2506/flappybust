@@ -17,7 +17,10 @@ pub struct Medal(pub Option<MedalType>);
 pub struct RestartButton;
 
 #[derive(Component)]
-pub struct Scoreboard;
+pub struct Scoreboard {
+    pub velocity: f32,
+    pub gravity: f32,
+}
 
 #[derive(Component)]
 pub struct GameOverText;
