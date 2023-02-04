@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use rand::distributions::{Distribution, Standard};
-use std::fmt::Display;
+use strum::AsRefStr;
 
-#[derive(Clone, Copy)]
+#[derive(AsRefStr, Clone, Copy)]
+#[strum(serialize_all = "lowercase")]
 pub enum BirdColor {
     Red,
     Blue,
@@ -16,16 +17,6 @@ impl Distribution<BirdColor> for Standard {
             1 => BirdColor::Blue,
             _ => BirdColor::Yellow,
         }
-    }
-}
-
-impl Display for BirdColor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            BirdColor::Red => "red",
-            BirdColor::Blue => "blue",
-            BirdColor::Yellow => "yellow",
-        })
     }
 }
 

@@ -27,7 +27,7 @@ impl Plugin for BirdPlugin {
 fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     let bird_color = random::<BirdColor>();
     let animation_frames = ["up", "mid", "down"]
-        .map(|state| asset_server.load(format!("images/bird_{bird_color}_{state}.png")));
+        .map(|state| asset_server.load(format!("images/bird_{}_{state}.png", bird_color.as_ref())));
     let bird = Bird::new(-53., 9.);
 
     commands.spawn((

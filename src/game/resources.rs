@@ -1,7 +1,7 @@
 use bevy::prelude::Resource;
 use flappybust::ternary;
 use rand::{distributions::Standard, prelude::Distribution, random, Rng};
-use std::fmt::{Display, Formatter, Result};
+use strum::AsRefStr;
 
 #[derive(Resource, Default)]
 pub enum BouncingState {
@@ -10,7 +10,8 @@ pub enum BouncingState {
     DOWN,
 }
 
-#[derive(Resource, Clone, Copy)]
+#[derive(Resource, AsRefStr, Clone, Copy)]
+#[strum(serialize_all = "lowercase")]
 pub enum DateTime {
     Day,
     Night,
@@ -25,14 +26,5 @@ impl Distribution<DateTime> for Standard {
 impl Default for DateTime {
     fn default() -> Self {
         random::<Self>()
-    }
-}
-
-impl Display for DateTime {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        f.write_str(match self {
-            DateTime::Day => "day",
-            DateTime::Night => "night",
-        })
     }
 }

@@ -11,9 +11,6 @@ use super::audio::{AudioAssets, AudioEvent};
 use super::bird::events::DeathEvent;
 use super::score::Score;
 
-#[derive(Component)]
-struct GameOver;
-
 pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
@@ -22,9 +19,7 @@ impl Plugin for GameOverPlugin {
             GameState::Over,
             SystemSet::new()
                 .with_system(gameover_spawn)
-                .with_system(scoreboard_spawn)
-                .with_system(medal_spawn)
-                .with_system(restart_button_spawn),
+                .with_system(medal_spawn),
         )
         .add_system(medal_scale.run_in_state(GameState::Over));
     }
@@ -37,11 +32,18 @@ fn gameover_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
             texture: asset_server.load("images/game_over.png"),
             ..default()
         },
-        GameOver,
+        GameOverText,
     ));
-}
 
-fn restart_button_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform::from_xyz(0., 57., 0.2),
+            texture: asset_server.load("images/scoreboard.png"),
+            ..default()
+        },
+        Scoreboard,
+    ));
+
     commands.spawn(SpriteBundle {
         texture: asset_server.load("images/restart_btn.png"),
         transform: Transform::from_xyz(0., -35., 0.2),
@@ -53,13 +55,13 @@ fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<Asse
     let mut medal_name = None;
 
     if score.current >= 10 && score.current < 20 {
-        medal_name = Some("bronze");
+        medal_name = Some(MedalType::Bronze);
     } else if score.current >= 20 && score.current < 30 {
-        medal_name = Some("silver");
+        medal_name = Some(MedalType::Silver);
     } else if score.current >= 30 && score.current < 40 {
-        medal_name = Some("gold");
+        medal_name = Some(MedalType::Gold);
     } else if score.current >= 40 {
-        medal_name = Some("platinum");
+        medal_name = Some(MedalType::Platinum);
     }
 
     commands.spawn((
@@ -71,17 +73,17 @@ fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<Asse
             },
             visibility: Visibility::INVISIBLE,
             texture: match medal_name {
-                Some(name) => asset_server.load(format!("images/medal_{name}.png")),
+                Some(name) => asset_server.load(format!("images/medal_{}.png", name.as_ref())),
                 None => DEFAULT_IMAGE_HANDLE.typed(),
             },
             ..default()
         },
-        Medal,
+        Medal(medal_name),
     ));
 }
 
 fn medal_scale(
-    mut medal: Query<(&mut Transform, &mut Visibility), With<Medal>>,
+    mut medal: Query<(&mut Transform, &mut Visibility, &Medal)>,
     mut audio_event: EventWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
     death_event: EventReader<DeathEvent>,
@@ -90,7 +92,11 @@ fn medal_scale(
         return;
     }
 
-    let (mut transform, mut visibility) = medal.single_mut();
+    let (mut transform, mut visibility, medal) = medal.single_mut();
+
+    if medal.0.is_none() {
+        return;
+    }
 
     visibility.is_visible = true;
 
@@ -105,15 +111,4 @@ fn medal_scale(
     if transform.scale.length() == (Vec3::X + Vec3::Y + scale_direction).length() {
         audio_event.send(AudioEvent::new(&audio_assets.ding, false));
     }
-}
-
-fn scoreboard_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_xyz(0., 57., 0.2),
-            texture: asset_server.load("images/scoreboard.png"),
-            ..default()
-        },
-        Scoreboard,
-    ));
 }
