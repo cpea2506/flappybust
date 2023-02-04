@@ -1,3 +1,6 @@
+pub mod components;
+use components::*;
+
 use crate::constants::SCREEN_HEIGHT;
 
 use bevy::prelude::*;
@@ -16,50 +19,28 @@ use super::{
     GameState,
 };
 
-#[derive(Clone, Copy, PartialEq)]
-enum Rank {
-    Unit,
-    Ten,
-    Hunred,
-}
-
-#[derive(Component)]
-struct ScoreRank(Rank);
-
-#[derive(Component)]
-struct ScoreText;
-
-#[derive(Component)]
-struct HighScoreText;
-
-#[derive(Resource, Clone, Default)]
-pub struct Score {
-    pub current: usize,
-    pub highest: usize,
-    textures: Vec<Handle<Image>>,
-}
-
-impl Score {
-    pub const WIDTH: f32 = 24.;
-    pub const HEIGHT: f32 = 36.;
-}
-
 pub struct ScorePlugin;
 
 impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Playing, playing_score_spawn)
+        app.init_resource::<Score>()
+            .add_enter_system(GameState::Playing, playing_score_spawn)
             .add_enter_system(GameState::Over, over_score_spawn)
             .add_system(record.run_not_in_state(GameState::Ready));
     }
 }
 
-fn playing_score_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn playing_score_spawn(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    prev_score: Res<Score>,
+) {
     let score = Score {
         textures: (0..10)
             .map(|i| asset_server.load(format!("images/{i}.png")))
             .collect(),
-        ..default()
+        current: 0,
+        ..*prev_score
     };
 
     commands.insert_resource(score);

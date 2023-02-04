@@ -9,7 +9,7 @@ use crate::GameState;
 
 use super::audio::{AudioAssets, AudioEvent};
 use super::bird::events::DeathEvent;
-use super::score::Score;
+use super::score::components::Score;
 
 pub struct GameOverPlugin;
 
@@ -44,11 +44,14 @@ fn gameover_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         Scoreboard,
     ));
 
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("images/restart_btn.png"),
-        transform: Transform::from_xyz(0., -35., 0.2),
-        ..default()
-    });
+    commands.spawn((
+        SpriteBundle {
+            texture: asset_server.load("images/restart_btn.png"),
+            transform: Transform::from_xyz(0., -35., 0.2),
+            ..default()
+        },
+        RestartButton,
+    ));
 }
 
 fn medal_spawn(mut commands: Commands, score: Res<Score>, asset_server: Res<AssetServer>) {
