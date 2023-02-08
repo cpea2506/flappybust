@@ -22,5 +22,30 @@ pub struct Scoreboard {
     pub gravity: f32,
 }
 
+impl Default for Scoreboard {
+    fn default() -> Self {
+        Scoreboard {
+            gravity: 0.15,
+            velocity: 0.,
+        }
+    }
+}
+
 #[derive(Component)]
-pub struct GameOverText;
+pub struct GameOverText {
+    pub velocity: f32,
+    pub gravity: f32,
+
+    /// whether text should be bounced or not (default: true)
+    pub bounce: bool,
+}
+
+impl Default for GameOverText {
+    fn default() -> Self {
+        GameOverText {
+            gravity: 0.1,
+            velocity: 0.,
+            bounce: true,
+        }
+    }
+}

@@ -12,7 +12,7 @@ use crate::GameState;
 
 use super::audio::{AudioAssets, AudioEvent};
 use super::bird::events::DeathEvent;
-use super::score::components::{HighScoreText, Score, ScoreText};
+use super::score::components::{HighScoreText, Score, ScoreRank, ScoreText};
 
 pub struct GameOverPlugin;
 
@@ -22,7 +22,7 @@ impl Plugin for GameOverPlugin {
             .add_enter_system_set(
                 GameState::Over,
                 SystemSet::new()
-                    .with_system(gameover_spawn)
+                    .with_system(game_over_spawn)
                     .with_system(medal_spawn),
             )
             .add_system_set(
@@ -30,19 +30,28 @@ impl Plugin for GameOverPlugin {
                     .run_in_state(GameState::Over)
                     .with_system(medal_scale)
                     .with_system(scoreboard_moving_up)
+                    .with_system(game_over_text_bouncing)
                     .into(),
             );
     }
 }
 
-fn gameover_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn game_over_spawn(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut score_rank: Query<&mut Visibility, With<ScoreRank>>,
+) {
+    for mut visibility in &mut score_rank {
+        visibility.toggle();
+    }
+
     commands.spawn((
         SpriteBundle {
-            transform: Transform::from_xyz(0., 156., 0.2),
+            transform: Transform::from_xyz(0., 351., 0.2),
             texture: asset_server.load("images/game_over.png"),
             ..default()
         },
-        GameOverText,
+        GameOverText::default(),
     ));
 
     commands.spawn((
@@ -51,10 +60,7 @@ fn gameover_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
             texture: asset_server.load("images/scoreboard.png"),
             ..default()
         },
-        Scoreboard {
-            velocity: 0.,
-            gravity: 0.15,
-        },
+        Scoreboard::default(),
     ));
 
     commands.spawn((
@@ -65,6 +71,24 @@ fn gameover_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         RestartButton,
     ));
+}
+
+fn game_over_text_bouncing(mut game_over_text: Query<(&mut Transform, &mut GameOverText)>) {
+    let (mut transform, mut game_over_text) = game_over_text.single_mut();
+
+    game_over_text.velocity += game_over_text.gravity;
+
+    transform.translation.y -= game_over_text.velocity;
+
+    if transform.translation.y < 156. {
+        if (game_over_text.bounce) {
+            game_over_text.velocity *= -0.73;
+            game_over_text.bounce = false;
+            return;
+        }
+
+        transform.translation.y = 156.;
+    }
 }
 
 fn scoreboard_moving_up(
