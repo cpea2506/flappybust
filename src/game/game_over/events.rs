@@ -7,3 +7,6 @@ pub struct MedalDisplayed;
 
 #[derive(Default)]
 pub struct RestartButtonDisplayed;
+
+#[derive(Default)]
+pub struct GameOverTextStable;

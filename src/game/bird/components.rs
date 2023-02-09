@@ -64,6 +64,6 @@ impl Bird {
 }
 
 #[derive(Component)]
-pub struct DeathBird {
+pub struct BirdSoul {
     pub translation: Vec3,
 }

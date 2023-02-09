@@ -68,14 +68,14 @@ fn death_bird_spawn(
             transform: Transform::from_translation(death_bird_translation),
             ..default()
         },
-        DeathBird {
+        BirdSoul {
             translation: death_bird_translation,
         },
     ));
 }
 
 fn death_bird_fly(
-    mut death_bird: Query<(&mut Transform, &mut Visibility, &DeathBird)>,
+    mut death_bird: Query<(&mut Transform, &mut Visibility, &BirdSoul)>,
     mut audio_event: EventWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
     medal_event: EventReader<MedalDisplayed>,

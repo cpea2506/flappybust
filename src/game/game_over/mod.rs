@@ -22,6 +22,7 @@ impl Plugin for GameOverPlugin {
             .add_event::<MedalDisplayed>()
             .add_event::<BirdToTheHeaven>()
             .add_event::<RestartButtonDisplayed>()
+            .add_event::<GameOverTextStable>()
             .add_enter_system_set(
                 GameState::Over,
                 SystemSet::new()
@@ -94,7 +95,10 @@ fn restart_btn_displaying(
     restart_btn_event.send_default();
 }
 
-fn game_over_text_bouncing(mut game_over_text: Query<(&mut Transform, &mut GameOverText)>) {
+fn game_over_text_bouncing(
+    mut game_over_text: Query<(&mut Transform, &mut GameOverText)>,
+    mut game_over_text_event: EventWriter<GameOverTextStable>,
+) {
     let (mut transform, mut game_over_text) = game_over_text.single_mut();
 
     game_over_text.velocity += game_over_text.gravity;
@@ -109,6 +113,7 @@ fn game_over_text_bouncing(mut game_over_text: Query<(&mut Transform, &mut GameO
         }
 
         transform.translation.y = 156.;
+        game_over_text_event.send_default();
     }
 }
 
@@ -171,11 +176,12 @@ fn medal_scale(
     mut medal: Query<(&mut Transform, &mut Visibility, &Medal)>,
     mut audio_event: EventWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
+    game_over_text_event: EventReader<GameOverTextStable>,
     death_event: EventReader<DeathEvent>,
     scoreboard_event: EventReader<ScoreboardDisplayed>,
     mut medal_event: EventWriter<MedalDisplayed>,
 ) {
-    if scoreboard_event.is_empty() || death_event.is_empty() {
+    if scoreboard_event.is_empty() || death_event.is_empty() || game_over_text_event.is_empty() {
         return;
     }
 
@@ -190,14 +196,19 @@ fn medal_scale(
 
     // scale both xy for circle
     let scale_direction = Vec3::X + Vec3::Y;
+    let unit_length = Vec3::ONE.length();
 
     // scale to orignal state
-    transform.scale = (transform.scale - scale_direction).clamp_length_min(Vec3::ONE.length());
+    transform.scale = (transform.scale - scale_direction).clamp_length_min(unit_length);
 
     // play audio if and only if the scale length reachs
     // (orignal + scale_direction) length
-    if transform.scale.length() == (Vec3::X + Vec3::Y + scale_direction).length() {
+    if transform.scale == (Vec3::X + Vec3::Y + scale_direction) {
         audio_event.send(AudioEvent::new(&audio_assets.ding, false));
+    }
+
+    // reach the final end position
+    if transform.scale == (transform.scale - scale_direction).clamp_length_min(unit_length) {
         medal_event.send_default();
     }
 }
