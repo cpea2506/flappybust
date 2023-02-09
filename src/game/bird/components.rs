@@ -62,3 +62,8 @@ impl Bird {
         }
     }
 }
+
+#[derive(Component)]
+pub struct DeathBird {
+    pub translation: Vec3,
+}

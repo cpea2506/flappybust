@@ -1,7 +1,7 @@
 pub mod components;
 use components::*;
 
-mod events;
+pub mod events;
 use events::*;
 
 use bevy::prelude::*;
@@ -11,14 +11,17 @@ use iyes_loopless::prelude::*;
 use crate::GameState;
 
 use super::audio::{AudioAssets, AudioEvent};
-use super::bird::events::DeathEvent;
+use super::bird::events::{BirdToTheHeaven, DeathEvent};
 use super::score::components::{HighScoreText, Score, ScoreRank, ScoreText};
 
 pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ScoreboardEvent>()
+        app.add_event::<ScoreboardDisplayed>()
+            .add_event::<MedalDisplayed>()
+            .add_event::<BirdToTheHeaven>()
+            .add_event::<RestartButtonDisplayed>()
             .add_enter_system_set(
                 GameState::Over,
                 SystemSet::new()
@@ -31,6 +34,7 @@ impl Plugin for GameOverPlugin {
                     .with_system(medal_scale)
                     .with_system(scoreboard_moving_up)
                     .with_system(game_over_text_bouncing)
+                    .with_system(restart_btn_displaying)
                     .into(),
             );
     }
@@ -66,11 +70,28 @@ fn game_over_spawn(
     commands.spawn((
         SpriteBundle {
             texture: asset_server.load("images/restart_btn.png"),
+            visibility: Visibility::INVISIBLE,
             transform: Transform::from_xyz(0., -35., 0.2),
             ..default()
         },
         RestartButton,
     ));
+}
+
+fn restart_btn_displaying(
+    mut restart_btn: Query<&mut Visibility, With<RestartButton>>,
+    bird_to_the_heaven_event: EventReader<BirdToTheHeaven>,
+    mut restart_btn_event: EventWriter<RestartButtonDisplayed>,
+) {
+    if bird_to_the_heaven_event.is_empty() {
+        return;
+    }
+
+    let mut visibility = restart_btn.single_mut();
+
+    visibility.is_visible = true;
+
+    restart_btn_event.send_default();
 }
 
 fn game_over_text_bouncing(mut game_over_text: Query<(&mut Transform, &mut GameOverText)>) {
@@ -95,7 +116,7 @@ fn scoreboard_moving_up(
     mut scoreboard: Query<(&mut Transform, &mut Scoreboard)>,
     mut score_text: Query<&mut Visibility, With<ScoreText>>,
     mut high_score_text: Query<&mut Visibility, (With<HighScoreText>, Without<ScoreText>)>,
-    mut scoreboard_event: EventWriter<ScoreboardEvent>,
+    mut scoreboard_event: EventWriter<ScoreboardDisplayed>,
 ) {
     let (mut transform, mut scoreboard) = scoreboard.single_mut();
 
@@ -107,8 +128,8 @@ fn scoreboard_moving_up(
         let mut score_text = score_text.single_mut();
         let mut high_score_text = high_score_text.single_mut();
 
-        score_text.toggle();
-        high_score_text.toggle();
+        score_text.is_visible = true;
+        high_score_text.is_visible = true;
 
         scoreboard_event.send_default();
     }
@@ -151,7 +172,8 @@ fn medal_scale(
     mut audio_event: EventWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
     death_event: EventReader<DeathEvent>,
-    scoreboard_event: EventReader<ScoreboardEvent>,
+    scoreboard_event: EventReader<ScoreboardDisplayed>,
+    mut medal_event: EventWriter<MedalDisplayed>,
 ) {
     if scoreboard_event.is_empty() || death_event.is_empty() {
         return;
@@ -160,6 +182,7 @@ fn medal_scale(
     let (mut transform, mut visibility, medal) = medal.single_mut();
 
     if medal.0.is_none() {
+        medal_event.send_default();
         return;
     }
 
@@ -175,5 +198,6 @@ fn medal_scale(
     // (orignal + scale_direction) length
     if transform.scale.length() == (Vec3::X + Vec3::Y + scale_direction).length() {
         audio_event.send(AudioEvent::new(&audio_assets.ding, false));
+        medal_event.send_default();
     }
 }

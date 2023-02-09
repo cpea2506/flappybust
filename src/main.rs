@@ -6,7 +6,7 @@ mod game;
 use bevy::{prelude::*, window::close_on_esc};
 use bevy_kira_audio::prelude::*;
 use constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
-use game::GamePlugin;
+use game::{game_over::events::RestartButtonDisplayed, GamePlugin};
 use iyes_loopless::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -47,14 +47,19 @@ fn input_setup(
     keyboards: Res<Input<KeyCode>>,
     buttons: Res<Input<MouseButton>>,
     game_state: Res<CurrentState<GameState>>,
+    restart_btn_event: EventReader<RestartButtonDisplayed>,
 ) {
     if keyboards.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
         match game_state.0 {
             GameState::Ready => commands.insert_resource(NextState(GameState::Playing)),
-            GameState::Over => commands.insert_resource(NextState(GameState::Ready)),
-            GameState::Playing => {
-                // let bird control this state
+            GameState::Over => {
+                if restart_btn_event.is_empty() {
+                    return;
+                }
+
+                commands.insert_resource(NextState(GameState::Ready));
             }
+            GameState::Playing => {}
         }
     }
 }

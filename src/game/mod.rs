@@ -16,7 +16,7 @@ use resources::DateTime;
 mod bird;
 use bird::BirdPlugin;
 
-mod game_over;
+pub mod game_over;
 use game_over::GameOverPlugin;
 
 mod pipe;
@@ -43,7 +43,12 @@ impl Plugin for GamePlugin {
         app.add_exit_system(GameState::Over, despawn_all)
             .add_plugin(AudioPlugin)
             .init_resource::<DateTime>()
-            .add_exit_system(GameState::Over, init_datetime)
+            .add_exit_system_set(
+                GameState::Over,
+                SystemSet::new()
+                    .with_system(init_datetime)
+                    .with_system(stop_all_songs),
+            )
             .add_enter_system(GameState::Playing, play_theme_song)
             .add_exit_system(GameState::Playing, stop_theme_song)
             .add_plugin(StartMessagePlugin)
@@ -59,6 +64,10 @@ impl Plugin for GamePlugin {
 
 fn init_datetime(mut commands: Commands) {
     commands.insert_resource(DateTime::default())
+}
+
+fn stop_all_songs(audio: Res<Audio>) {
+    audio.stop();
 }
 
 fn play_theme_song(mut audio_event: EventWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {

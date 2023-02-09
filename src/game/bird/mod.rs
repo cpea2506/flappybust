@@ -1,11 +1,14 @@
 pub mod components;
 pub mod events;
 
-use components::{Bird, BirdColor, FlapAnimation};
+use components::*;
+use flappybust::Math;
 use iyes_loopless::state::CurrentState;
 
-use events::DeathEvent;
+use events::*;
 
+use super::base::Base;
+use super::game_over::events::*;
 use super::{audio::*, resources::BouncingState, GameState};
 use bevy::prelude::*;
 use iyes_loopless::prelude::{AppLooplessStateExt, IntoConditionalSystem};
@@ -20,7 +23,9 @@ impl Plugin for BirdPlugin {
             .add_system(flap.run_not_in_state(GameState::Over))
             .add_system(fly.run_not_in_state(GameState::Ready))
             .init_resource::<BouncingState>()
-            .add_system(bouncing_y.run_in_state(GameState::Ready));
+            .add_system(bouncing_y.run_in_state(GameState::Ready))
+            .add_enter_system(GameState::Over, death_bird_spawn)
+            .add_system(death_bird_fly.run_in_state(GameState::Over));
     }
 }
 
@@ -39,6 +44,60 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         FlapAnimation::new(0.15, animation_frames),
     ));
+}
+
+fn death_bird_spawn(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    bird: Query<&Bird>,
+    base: Query<&Base>,
+) {
+    let bird = bird.single();
+    let base = base.iter().next().expect("base must be initialized first");
+
+    let death_bird_translation = Vec3::new(
+        bird.translation.x,
+        base.collider_pos + bird.size.y.half(),
+        0.5,
+    );
+
+    commands.spawn((
+        SpriteBundle {
+            texture: asset_server.load("images/bird_soul.png"),
+            visibility: Visibility::INVISIBLE,
+            transform: Transform::from_translation(death_bird_translation),
+            ..default()
+        },
+        DeathBird {
+            translation: death_bird_translation,
+        },
+    ));
+}
+
+fn death_bird_fly(
+    mut death_bird: Query<(&mut Transform, &mut Visibility, &DeathBird)>,
+    mut audio_event: EventWriter<AudioEvent>,
+    audio_assets: Res<AudioAssets>,
+    medal_event: EventReader<MedalDisplayed>,
+    mut bird_to_the_heaven_event: EventWriter<BirdToTheHeaven>,
+) {
+    if medal_event.is_empty() {
+        return;
+    }
+
+    let (mut transform, mut visibility, death_bird) = death_bird.single_mut();
+
+    visibility.is_visible = true;
+
+    transform.translation.y += 1.;
+
+    if transform.translation.y == death_bird.translation.y + 1. {
+        audio_event.send(AudioEvent::new(&audio_assets.heaven, false));
+    }
+
+    if transform.translation.y >= 267. {
+        bird_to_the_heaven_event.send_default();
+    }
 }
 
 fn fly(
