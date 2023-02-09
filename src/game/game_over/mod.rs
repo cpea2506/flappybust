@@ -81,7 +81,7 @@ fn game_over_text_bouncing(mut game_over_text: Query<(&mut Transform, &mut GameO
     transform.translation.y -= game_over_text.velocity;
 
     if transform.translation.y < 156. {
-        if (game_over_text.bounce) {
+        if game_over_text.bounce {
             game_over_text.velocity *= -0.73;
             game_over_text.bounce = false;
             return;

@@ -84,6 +84,7 @@ fn over_score_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 }
 
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn record(
     audio_assets: Res<AudioAssets>,
     mut audio_event: EventWriter<AudioEvent>,

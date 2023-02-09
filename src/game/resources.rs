@@ -6,8 +6,8 @@ use strum::AsRefStr;
 #[derive(Resource, Default)]
 pub enum BouncingState {
     #[default]
-    UP,
-    DOWN,
+    Up,
+    Down,
 }
 
 #[derive(Resource, AsRefStr, Clone, Copy)]

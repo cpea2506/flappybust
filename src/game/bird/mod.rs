@@ -105,16 +105,16 @@ fn bouncing_y(
     let distance = bird_transform.translation.y - bird.translation.y;
 
     if distance >= bouncing_radius {
-        commands.insert_resource(BouncingState::DOWN);
+        commands.insert_resource(BouncingState::Down);
     } else if distance <= -bouncing_radius {
-        commands.insert_resource(BouncingState::UP);
+        commands.insert_resource(BouncingState::Up);
     }
 
     match bouncing_state.into_inner() {
-        BouncingState::UP => {
+        BouncingState::Up => {
             bird_transform.translation.y += 0.5;
         }
-        BouncingState::DOWN => {
+        BouncingState::Down => {
             bird_transform.translation.y -= 0.5;
         }
     }
