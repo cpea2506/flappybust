@@ -1,5 +1,6 @@
 use crate::{constants::SCREEN_WIDTH, GameState};
 use bevy::prelude::*;
+use flappybust::ternary;
 use iyes_loopless::prelude::{AppLooplessStateExt, IntoConditionalSystem};
 
 use super::resources::DateTime;
@@ -57,11 +58,7 @@ fn moving(mut background: Query<(&mut Background, &mut Transform)>) {
     for (mut background, mut transform) in &mut background {
         background.translation.x = (background.translation.x - 1.) % screen_width;
 
-        transform.translation.x = background.translation.x
-            + if background.secondary {
-                SCREEN_WIDTH
-            } else {
-                0.
-            };
+        transform.translation.x =
+            background.translation.x + ternary!(background.secondary, SCREEN_WIDTH, 0.);
     }
 }
