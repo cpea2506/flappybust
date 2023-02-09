@@ -43,7 +43,7 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<D
     let background = Background::default();
     let secondary_background =
         Background::new(background.translation.x, background.translation.y, true);
-    let texture = asset_server.load(&format!("images/bg_{}.png", (*datetime).as_ref()));
+    let texture = asset_server.load(format!("images/bg_{}.png", (*datetime).as_ref()));
 
     commands.spawn_batch(vec![
         background.generate_bundle(&texture),
