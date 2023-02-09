@@ -24,8 +24,8 @@ impl Plugin for BirdPlugin {
             .add_system(fly.run_not_in_state(GameState::Ready))
             .init_resource::<BouncingState>()
             .add_system(bouncing_y.run_in_state(GameState::Ready))
-            .add_enter_system(GameState::Over, death_bird_spawn)
-            .add_system(death_bird_fly.run_in_state(GameState::Over));
+            .add_enter_system(GameState::Over, bird_soul_spawn)
+            .add_system(bird_soul_fly.run_in_state(GameState::Over));
     }
 }
 
@@ -46,7 +46,7 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 }
 
-fn death_bird_spawn(
+fn bird_soul_spawn(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     bird: Query<&Bird>,
@@ -55,7 +55,7 @@ fn death_bird_spawn(
     let bird = bird.single();
     let base = base.iter().next().expect("base must be initialized first");
 
-    let death_bird_translation = Vec3::new(
+    let bird_soul_translation = Vec3::new(
         bird.translation.x,
         base.collider_pos + bird.size.y.half(),
         0.5,
@@ -65,17 +65,17 @@ fn death_bird_spawn(
         SpriteBundle {
             texture: asset_server.load("images/bird_soul.png"),
             visibility: Visibility::INVISIBLE,
-            transform: Transform::from_translation(death_bird_translation),
+            transform: Transform::from_translation(bird_soul_translation),
             ..default()
         },
         BirdSoul {
-            translation: death_bird_translation,
+            translation: bird_soul_translation,
         },
     ));
 }
 
-fn death_bird_fly(
-    mut death_bird: Query<(&mut Transform, &mut Visibility, &BirdSoul)>,
+fn bird_soul_fly(
+    mut bird_soul: Query<(&mut Transform, &mut Visibility, &BirdSoul)>,
     mut audio_event: EventWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
     medal_event: EventReader<MedalDisplayed>,
@@ -85,13 +85,13 @@ fn death_bird_fly(
         return;
     }
 
-    let (mut transform, mut visibility, death_bird) = death_bird.single_mut();
+    let (mut transform, mut visibility, bird_soul) = bird_soul.single_mut();
 
     visibility.is_visible = true;
 
     transform.translation.y += 1.;
 
-    if transform.translation.y == death_bird.translation.y + 1. {
+    if transform.translation.y == bird_soul.translation.y + 1. {
         audio_event.send(AudioEvent::new(&audio_assets.heaven, false));
     }
 
