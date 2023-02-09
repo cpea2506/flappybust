@@ -45,6 +45,7 @@ fn camera_setup(mut commands: Commands) {
 fn input_setup(
     mut commands: Commands,
     keyboards: Res<Input<KeyCode>>,
+    mut cursor_event: EventReader<CursorMoved>,
     buttons: Res<Input<MouseButton>>,
     game_state: Res<CurrentState<GameState>>,
     restart_btn_event: EventReader<RestartButtonDisplayed>,
@@ -55,6 +56,19 @@ fn input_setup(
             GameState::Over => {
                 if restart_btn_event.is_empty() {
                     return;
+                }
+
+                if buttons.just_pressed(MouseButton::Left) {
+                    for ev in cursor_event.iter() {
+                        // the cursor must inside restart btn area
+                        if ev.position.y <= 200.
+                            || ev.position.y >= 237.
+                            || ev.position.x <= 90.
+                            || ev.position.x >= 200.
+                        {
+                            return;
+                        }
+                    }
                 }
 
                 commands.insert_resource(NextState(GameState::Ready));
