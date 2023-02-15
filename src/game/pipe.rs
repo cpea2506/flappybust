@@ -22,6 +22,7 @@ pub struct Pipe {
 impl Pipe {
     pub const WIDTH: f32 = 52.;
     pub const HEIGHT: f32 = 320.;
+    const GAP: f32 = 80.;
 
     fn new(x: f32, y: f32, flip_y: bool) -> Self {
         Pipe {
@@ -46,6 +47,45 @@ impl Pipe {
             self,
         )
     }
+
+    /// generate number of pipes by `num_pipe`
+    #[inline]
+    fn genrate_self(
+        num_pipe: u32,
+        commands: &mut Commands,
+        asset_server: &Res<AssetServer>,
+        datetime: &Res<DateTime>,
+    ) {
+        let texture = asset_server.load(format!(
+            "images/pipe_{}.png",
+            match **datetime {
+                DateTime::Day => "green",
+                _ => "red",
+            }
+        ));
+
+        let mut rng = thread_rng();
+        let y_between = Uniform::new(-240., -50.);
+
+        // spawn first 2 pipes
+        (0..num_pipe).for_each(|i| {
+            let pipe = Pipe::new(
+                SCREEN_WIDTH.half() + Self::WIDTH.half() + 175. * i as f32,
+                y_between.sample(&mut rng),
+                false,
+            );
+            let flipped_pipe = Pipe::new(
+                pipe.translation.x,
+                pipe.translation.y + Self::GAP + Self::HEIGHT,
+                true,
+            );
+
+            commands.spawn_batch(vec![
+                pipe.generate_bundle(&texture),
+                flipped_pipe.generate_bundle(&texture),
+            ]);
+        });
+    }
 }
 
 pub struct PipePlugin;
@@ -56,38 +96,16 @@ impl Plugin for PipePlugin {
             .add_system(moving.run_in_state(GameState::Playing));
     }
 }
-
 fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
-    let mut rng = thread_rng();
-    let y_between = Uniform::new(-240., -50.);
-    let texture = asset_server.load(format!(
-        "images/pipe_{}.png",
-        match datetime.into_inner() {
-            DateTime::Day => "green",
-            _ => "red",
-        }
-    ));
-
-    // TODO: spawn first 3 pipe and generate more later
-    // spawn first 500 pipes
-    (0..500).for_each(|i| {
-        let gap = 80.;
-
-        let pipe = Pipe::new(360. + 175. * i as f32, y_between.sample(&mut rng), false);
-        let flipped_pipe = Pipe::new(
-            pipe.translation.x,
-            pipe.translation.y + gap + Pipe::HEIGHT,
-            true,
-        );
-
-        commands.spawn_batch(vec![
-            pipe.generate_bundle(&texture),
-            flipped_pipe.generate_bundle(&texture),
-        ]);
-    });
+    Pipe::genrate_self(2, &mut commands, &asset_server, &datetime);
 }
 
-fn moving(mut commands: Commands, mut pipe: Query<(Entity, &mut Transform), With<Pipe>>) {
+fn moving(
+    mut commands: Commands,
+    mut pipe: Query<(Entity, &mut Transform), With<Pipe>>,
+    asset_server: Res<AssetServer>,
+    datetime: Res<DateTime>,
+) {
     let half_pipe_width = Pipe::WIDTH.half();
     let half_screen_width = SCREEN_WIDTH.half();
 
@@ -99,6 +117,8 @@ fn moving(mut commands: Commands, mut pipe: Query<(Entity, &mut Transform), With
 
         // remove pipes that are outside of screen
         if pipe_transform.translation.x <= -half_pipe_width - half_screen_width {
+            Pipe::genrate_self(1, &mut commands, &asset_server, &datetime);
+
             commands.entity(pipe_entity).despawn();
             commands.entity(flipped_pipe_entity).despawn();
         }
