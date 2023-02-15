@@ -1,4 +1,7 @@
-use crate::{constants::SCREEN_WIDTH, GameState};
+use crate::{
+    constants::{GAME_SPEED, SCREEN_WIDTH},
+    GameState,
+};
 use bevy::prelude::*;
 use flappybust::Math;
 use itertools::Itertools;
@@ -68,7 +71,7 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<D
     // TODO: spawn first 3 pipe and generate more later
     // spawn first 500 pipes
     (0..500).for_each(|i| {
-        let gap = 100.;
+        let gap = 80.;
 
         let pipe = Pipe::new(360. + 175. * i as f32, y_between.sample(&mut rng), false);
         let flipped_pipe = Pipe::new(
@@ -91,8 +94,8 @@ fn moving(mut commands: Commands, mut pipe: Query<(Entity, &mut Transform), With
     for ((pipe_entity, mut pipe_transform), (flipped_pipe_entity, mut flipped_pipe_transform)) in
         pipe.iter_mut().tuples()
     {
-        pipe_transform.translation.x -= 1.;
-        flipped_pipe_transform.translation.x -= 1.;
+        pipe_transform.translation.x -= GAME_SPEED;
+        flipped_pipe_transform.translation.x -= GAME_SPEED;
 
         // remove pipes that are outside of screen
         if pipe_transform.translation.x <= -half_pipe_width - half_screen_width {

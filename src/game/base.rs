@@ -1,4 +1,7 @@
-use crate::{constants::SCREEN_HEIGHT, GameState};
+use crate::{
+    constants::{GAME_SPEED, SCREEN_HEIGHT},
+    GameState,
+};
 use bevy::prelude::*;
 use flappybust::{ternary, Math};
 use iyes_loopless::prelude::*;
@@ -60,7 +63,7 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn moving(mut base: Query<(&mut Base, &mut Transform)>) {
     for (mut base, mut transform) in &mut base {
-        base.translation.x = (base.translation.x - 1.) % Base::RESET_POINT;
+        base.translation.x = (base.translation.x - GAME_SPEED) % Base::RESET_POINT;
         transform.translation.x =
             base.translation.x + ternary!(base.secondary, Base::RESET_POINT, 0.);
     }

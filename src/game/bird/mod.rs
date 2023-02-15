@@ -118,7 +118,7 @@ fn fly(
         if keys.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
             audio_event.send(AudioEvent::new(&audio_assets.wing, false));
 
-            bird.velocity = -2.35;
+            bird.velocity = Bird::DEFAULT_VELOCITY;
 
             // rotate bird a 25deg angle
             bird.rotation = 25f32.to_radians();

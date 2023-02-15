@@ -51,13 +51,14 @@ pub struct Bird {
 impl Bird {
     pub const WIDTH: f32 = 34.;
     pub const HEIGHT: f32 = 24.;
+    pub const DEFAULT_VELOCITY: f32 = -2.5;
 
     pub fn new(x: f32, y: f32) -> Self {
         Bird {
             translation: Vec3::new(x, y, 0.3),
-            velocity: -2.35,
+            velocity: Self::DEFAULT_VELOCITY,
             size: Vec2::new(Self::WIDTH, Self::HEIGHT),
-            gravity: 0.098, // 9.8 m/s^2
+            gravity: 0.098,
             rotation: 25f32.to_radians(),
         }
     }
