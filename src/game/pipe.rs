@@ -3,7 +3,7 @@ use crate::{
     GameState,
 };
 use bevy::prelude::*;
-use flappybust::Math;
+use flappybust::{ternary, Math};
 use itertools::Itertools;
 use iyes_loopless::prelude::*;
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
@@ -52,6 +52,7 @@ impl Pipe {
     #[inline]
     fn genrate_self(
         num_pipe: u32,
+        first_time: bool,
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
         datetime: &Res<DateTime>,
@@ -70,7 +71,9 @@ impl Pipe {
         // spawn first 2 pipes
         (0..num_pipe).for_each(|i| {
             let pipe = Pipe::new(
-                SCREEN_WIDTH.half() + Self::WIDTH.half() + 175. * i as f32,
+                ternary!(first_time, SCREEN_WIDTH, SCREEN_WIDTH.half())
+                    + Self::WIDTH.half()
+                    + 175. * i as f32,
                 y_between.sample(&mut rng),
                 false,
             );
@@ -97,7 +100,7 @@ impl Plugin for PipePlugin {
     }
 }
 fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
-    Pipe::genrate_self(2, &mut commands, &asset_server, &datetime);
+    Pipe::genrate_self(2, true, &mut commands, &asset_server, &datetime);
 }
 
 fn moving(
@@ -117,7 +120,7 @@ fn moving(
 
         // remove pipes that are outside of screen
         if pipe_transform.translation.x <= -half_pipe_width - half_screen_width {
-            Pipe::genrate_self(1, &mut commands, &asset_server, &datetime);
+            Pipe::genrate_self(1, false, &mut commands, &asset_server, &datetime);
 
             commands.entity(pipe_entity).despawn();
             commands.entity(flipped_pipe_entity).despawn();
