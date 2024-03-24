@@ -2,30 +2,40 @@ pub mod components;
 pub mod events;
 
 use components::*;
-use flappybust::Math;
-use iyes_loopless::state::CurrentState;
+use flappybust::BasicMath;
 
 use events::*;
 
 use super::base::Base;
-use super::game_over::events::*;
-use super::{audio::*, resources::BouncingState, GameState};
+use super::game_over::events::MedalDisplayed;
+use super::{audio::*, GameState};
 use bevy::prelude::*;
-use iyes_loopless::prelude::{AppLooplessStateExt, IntoConditionalSystem};
 use rand::random;
+
+#[derive(Default, Resource)]
+enum BouncingState {
+    #[default]
+    Up,
+    Down,
+}
 
 pub struct BirdPlugin;
 
 impl Plugin for BirdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<DeathEvent>()
-            .add_enter_system(GameState::Ready, spawn)
-            .add_system(flap.run_not_in_state(GameState::Over))
-            .add_system(fly.run_not_in_state(GameState::Ready))
-            .init_resource::<BouncingState>()
-            .add_system(bouncing_y.run_in_state(GameState::Ready))
-            .add_enter_system(GameState::Over, bird_soul_spawn)
-            .add_system(bird_soul_fly.run_in_state(GameState::Over));
+        app.init_resource::<BouncingState>()
+            .add_event::<DeathEvent>()
+            .add_systems(OnEnter(GameState::Ready), spawn)
+            .add_systems(OnEnter(GameState::Over), bird_soul_spawn)
+            .add_systems(
+                Update,
+                (
+                    flap.run_if(not(in_state(GameState::Over))),
+                    fly.run_if(not(in_state(GameState::Ready))),
+                    bouncing_y.run_if(in_state(GameState::Ready)),
+                    bird_soul_fly.run_if(in_state(GameState::Over)),
+                ),
+            );
     }
 }
 
@@ -64,7 +74,7 @@ fn bird_soul_spawn(
     commands.spawn((
         SpriteBundle {
             texture: asset_server.load("images/bird_soul.png"),
-            visibility: Visibility::INVISIBLE,
+            visibility: Visibility::Hidden,
             transform: Transform::from_translation(bird_soul_translation),
             ..default()
         },
@@ -87,23 +97,23 @@ fn bird_soul_fly(
 
     let (mut transform, mut visibility, bird_soul) = bird_soul.single_mut();
 
-    visibility.is_visible = true;
+    *visibility = Visibility::Visible;
 
-    transform.translation.y += 1.;
+    transform.translation.y += 1f32;
 
-    if transform.translation.y == bird_soul.translation.y + 1. {
+    if transform.translation.y == bird_soul.translation.y + 1f32 {
         audio_event.send(AudioEvent::new(&audio_assets.heaven, false));
     }
 
-    if transform.translation.y >= 267. {
+    if transform.translation.y >= 267f32 {
         bird_to_the_heaven_event.send_default();
     }
 }
 
 fn fly(
-    keys: Res<Input<KeyCode>>,
-    buttons: Res<Input<MouseButton>>,
-    game_state: Res<CurrentState<GameState>>,
+    keys: Res<ButtonInput<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    current_state: Res<State<GameState>>,
     mut bird: Query<(&mut Bird, &mut Transform)>,
     mut audio_event: EventWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
@@ -114,7 +124,7 @@ fn fly(
     // Rotate down at min -90deg and rotate up at max 25deg
     bird.rotation = (bird.rotation - 40f32.recip()).clamp(-90f32.to_radians(), 25f32.to_radians());
 
-    if game_state.0 == GameState::Playing {
+    if matches!(current_state.get(), GameState::Playing) {
         if keys.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
             audio_event.send(AudioEvent::new(&audio_assets.wing, false));
 

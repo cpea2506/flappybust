@@ -1,5 +1,7 @@
-#[derive(Default)]
+use bevy::ecs::event::Event;
+
+#[derive(Default, Event)]
 pub struct DeathEvent;
 
-#[derive(Default)]
+#[derive(Default, Event)]
 pub struct BirdToTheHeaven;

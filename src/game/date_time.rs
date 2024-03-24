@@ -3,14 +3,8 @@ use flappybust::ternary;
 use rand::{distributions::Standard, prelude::Distribution, random, Rng};
 use strum::AsRefStr;
 
-#[derive(Resource, Default)]
-pub enum BouncingState {
-    #[default]
-    Up,
-    Down,
-}
-
-#[derive(Resource, AsRefStr, Clone, Copy)]
+/// Represent time of a day in game.
+#[derive(AsRefStr, Clone, Copy, Resource)]
 #[strum(serialize_all = "lowercase")]
 pub enum DateTime {
     Day,

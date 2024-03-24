@@ -11,7 +11,7 @@
 
 ### Prerequisite
 
-- Rust >= 1.67
+- Rust >= 1.78 (nightly)
 - [Cargo Watch](https://crates.io/crates/cargo-watch) (optional)
 
 ### Steps
