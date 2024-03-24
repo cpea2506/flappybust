@@ -1,20 +1,30 @@
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 use bevy_asset_loader::prelude::{AssetCollection, AssetCollectionApp};
-use bevy_kira_audio::prelude::*;
 
-#[derive(Resource)]
-pub struct ThemeSongHandle(pub Handle<AudioInstance>);
+#[derive(Component)]
+pub struct AmbientMusic;
 
+#[derive(Event)]
 pub struct AudioEvent {
-    audio: Handle<AudioSource>,
+    source: Handle<AudioSource>,
     looped: bool,
+    volume: f32,
 }
 
 impl AudioEvent {
     pub fn new(audio: &Handle<AudioSource>, looped: bool) -> Self {
         AudioEvent {
-            audio: audio.clone(),
+            source: audio.clone(),
             looped,
+            volume: 1.0,
+        }
+    }
+
+    pub fn new_with_volume(audio: &Handle<AudioSource>, looped: bool, volume: f32) -> Self {
+        AudioEvent {
+            source: audio.clone(),
+            looped,
+            volume,
         }
     }
 }
@@ -44,31 +54,30 @@ pub struct AudioPlugin;
 impl Plugin for AudioPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<AudioEvent>()
-            .add_system(on_audio_event)
-            .init_collection::<AudioAssets>();
+            .init_collection::<AudioAssets>()
+            .add_systems(Update, play_audio);
     }
 }
 
-fn on_audio_event(
-    mut commands: Commands,
-    audio: Res<Audio>,
-    mut audio_events: EventReader<AudioEvent>,
-) {
+fn play_audio(mut commands: Commands, mut audio_events: EventReader<AudioEvent>) {
     if audio_events.is_empty() {
         return;
     }
 
-    for event in audio_events.iter() {
-        if event.looped {
-            let handle = audio
-                .play(event.audio.clone())
-                .with_volume(0.3)
-                .looped()
-                .handle();
-
-            commands.insert_resource(ThemeSongHandle(handle))
+    for audio_event in audio_events.read() {
+        if audio_event.looped {
+            commands.spawn((
+                AudioBundle {
+                    source: audio_event.source.clone(),
+                    settings: PlaybackSettings::LOOP.with_volume(Volume::new(audio_event.volume)),
+                },
+                AmbientMusic,
+            ));
         } else {
-            audio.play(event.audio.clone());
+            commands.spawn(AudioBundle {
+                source: audio_event.source.clone(),
+                settings: PlaybackSettings::ONCE.with_volume(Volume::new(audio_event.volume)),
+            });
         }
     }
 }

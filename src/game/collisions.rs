@@ -1,9 +1,10 @@
-use bevy::{prelude::*, sprite::collide_aabb::collide};
-use flappybust::Math;
-use itertools::Itertools;
-use iyes_loopless::prelude::*;
-
 use crate::GameState;
+use bevy::{
+    math::bounding::{Aabb2d, IntersectsVolume},
+    prelude::*,
+};
+use flappybust::BasicMath;
+use itertools::Itertools;
 
 use super::{
     audio::{AudioAssets, AudioEvent},
@@ -12,24 +13,28 @@ use super::{
     pipe::Pipe,
 };
 
-#[derive(Default)]
+#[derive(Event, Default)]
 pub struct CollisionEvent;
 
 pub struct CollisionPlugin;
 
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_event::<CollisionEvent>()
-            .add_system(check_collision.run_not_in_state(GameState::Ready))
-            .add_system(on_collision.run_in_state(GameState::Playing));
+        app.add_event::<CollisionEvent>().add_systems(
+            Update,
+            (
+                check_collision.run_if(not(in_state(GameState::Ready))),
+                on_collision.run_if(in_state(GameState::Playing)),
+            ),
+        );
     }
 }
 
 fn check_collision(
     mut bird: Query<(&mut Transform, &Bird)>,
     pipes: Query<(&Transform, &Pipe), Without<Bird>>,
-    bases: Query<&Base, (Without<Bird>, Without<Pipe>)>,
-    game_state: Res<CurrentState<GameState>>,
+    bases: Query<&Base, (Without<Pipe>, Without<Bird>)>,
+    game_state: Res<State<GameState>>,
     mut collision_event: EventWriter<CollisionEvent>,
     mut death_event: EventWriter<DeathEvent>,
 ) {
@@ -48,14 +53,18 @@ fn check_collision(
         collision_event.send_default();
     }
 
-    // check pipe collision only on playing state
-    // to prevent each frame check when bird falls inside a pipe
-    if game_state.0 == GameState::Playing {
+    // Check pipe collision only on playing state
+    // to prevent each frame checking when bird falls inside a pipe.
+    if matches!(game_state.get(), GameState::Playing) {
         let bird_collide = |b_pos: Vec3, b_size: Vec2| {
-            collide(bird_transform.translation, bird.size, b_pos, b_size)
+            let bird_bounding_box =
+                Aabb2d::new(bird_transform.translation.truncate(), bird.size.half());
+            let other_bounding_box = Aabb2d::new(b_pos.truncate(), b_size.half());
+
+            bird_bounding_box.intersects(&other_bounding_box)
         };
 
-        // collapsed with pipe
+        // Collide with pipe.
         for ((pipe_transform, pipe), (flipped_pipe_transform, flipped_pipe)) in
             pipes.iter().tuples()
         {
@@ -63,7 +72,7 @@ fn check_collision(
             let flipped_pipe_collision =
                 bird_collide(flipped_pipe_transform.translation, flipped_pipe.size);
 
-            if pipe_collision.is_some() || flipped_pipe_collision.is_some() {
+            if pipe_collision || flipped_pipe_collision {
                 collision_event.send_default();
             }
         }
@@ -71,7 +80,7 @@ fn check_collision(
 }
 
 fn on_collision(
-    mut commands: Commands,
+    mut next_state: ResMut<NextState<GameState>>,
     audio_assets: Res<AudioAssets>,
     mut audio_event: EventWriter<AudioEvent>,
     collision_event: EventReader<CollisionEvent>,
@@ -85,5 +94,5 @@ fn on_collision(
         AudioEvent::new(&audio_assets.hit, false),
     ]);
 
-    commands.insert_resource(NextState(GameState::Over));
+    next_state.set(GameState::Over);
 }

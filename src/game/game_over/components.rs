@@ -11,7 +11,17 @@ pub enum MedalType {
 }
 
 #[derive(Component)]
-pub struct Medal(pub Option<MedalType>);
+pub struct Medal(Option<MedalType>);
+
+impl Medal {
+    pub fn new(medal: Option<MedalType>) -> Self {
+        Self(medal)
+    }
+
+    pub fn get(&self) -> &Option<MedalType> {
+        &self.0
+    }
+}
 
 #[derive(Component)]
 pub struct RestartButton;
@@ -26,7 +36,7 @@ impl Default for Scoreboard {
     fn default() -> Self {
         Scoreboard {
             gravity: 0.15,
-            velocity: 0.,
+            velocity: 0f32,
         }
     }
 }
@@ -36,7 +46,7 @@ pub struct GameOverText {
     pub velocity: f32,
     pub gravity: f32,
 
-    /// whether text should be bounced or not (default: true)
+    /// Whether text should be bounced or not (default: true).
     pub bounce: bool,
 }
 
@@ -44,7 +54,7 @@ impl Default for GameOverText {
     fn default() -> Self {
         GameOverText {
             gravity: 0.1,
-            velocity: 0.,
+            velocity: 0f32,
             bounce: true,
         }
     }

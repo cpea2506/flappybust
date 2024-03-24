@@ -1,12 +1,17 @@
-/// event triggers when scoreboard is in place
-#[derive(Default)]
+use bevy::ecs::event::Event;
+
+/// Event triggers when scoreboard is in place.
+#[derive(Default, Event)]
 pub struct ScoreboardDisplayed;
 
-#[derive(Default)]
+/// Event triggers when medal is in place.
+#[derive(Default, Event)]
 pub struct MedalDisplayed;
 
-#[derive(Default)]
+/// Event triggers when restart button is in place.
+#[derive(Default, Event)]
 pub struct RestartButtonDisplayed;
 
-#[derive(Default)]
-pub struct GameOverTextStable;
+/// Event triggers when game over table is in place.
+#[derive(Default, Event)]
+pub struct GameOverTextDisplayed;
