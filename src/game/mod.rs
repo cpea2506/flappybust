@@ -2,7 +2,7 @@ mod collisions;
 use collisions::CollisionPlugin;
 
 mod audio;
-use audio::{AudioAssets, AudioEvent, AudioPlugin, ThemeSongHandle};
+use audio::{AmbientMusic, AudioAssets, AudioEvent, AudioPlugin};
 
 mod background;
 use background::BackgroundPlugin;
@@ -10,8 +10,8 @@ use background::BackgroundPlugin;
 mod base;
 use base::BasePlugin;
 
-mod resources;
-use resources::DateTime;
+mod date_time;
+use date_time::DateTime;
 
 mod bird;
 use bird::BirdPlugin;
@@ -29,36 +29,33 @@ mod start_message;
 use start_message::StartMessagePlugin;
 
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
 
 use flappybust::despawn_all;
 
 use crate::GameState;
-use bevy_kira_audio::*;
 
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_exit_system(GameState::Over, despawn_all)
-            .add_plugin(AudioPlugin)
-            .init_resource::<DateTime>()
-            .add_exit_system_set(
-                GameState::Over,
-                SystemSet::new()
-                    .with_system(init_datetime)
-                    .with_system(stop_all_songs),
+        app.init_resource::<DateTime>()
+            .add_plugins((
+                AudioPlugin,
+                StartMessagePlugin,
+                BackgroundPlugin,
+                BasePlugin,
+                BirdPlugin,
+                PipePlugin,
+                CollisionPlugin,
+                ScorePlugin,
+                GameOverPlugin,
+            ))
+            .add_systems(
+                OnExit(GameState::Over),
+                (despawn_all, init_datetime, stop_all_songs),
             )
-            .add_enter_system(GameState::Playing, play_theme_song)
-            .add_exit_system(GameState::Playing, stop_theme_song)
-            .add_plugin(StartMessagePlugin)
-            .add_plugin(BackgroundPlugin)
-            .add_plugin(BasePlugin)
-            .add_plugin(BirdPlugin)
-            .add_plugin(PipePlugin)
-            .add_plugin(CollisionPlugin)
-            .add_plugin(ScorePlugin)
-            .add_plugin(GameOverPlugin);
+            .add_systems(OnEnter(GameState::Playing), play_ambient_music)
+            .add_systems(OnExit(GameState::Playing), stop_ambient_music);
     }
 }
 
@@ -66,20 +63,18 @@ fn init_datetime(mut commands: Commands) {
     commands.insert_resource(DateTime::default())
 }
 
-fn stop_all_songs(audio: Res<Audio>) {
-    audio.stop();
+fn stop_all_songs(audio_sinks: Query<&AudioSink>) {
+    for sink in &audio_sinks {
+        sink.stop();
+    }
 }
 
-fn play_theme_song(mut audio_event: EventWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {
-    audio_event.send(AudioEvent::new(&audio_assets.theme, true));
+fn play_ambient_music(mut audio_event: EventWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {
+    audio_event.send(AudioEvent::new_with_volume(&audio_assets.theme, true, 0.2));
 }
 
-fn stop_theme_song(
-    handle: Res<ThemeSongHandle>,
-    mut audio_instances: ResMut<Assets<AudioInstance>>,
-) {
-    if let Some(instance) = audio_instances.get_mut(&handle.0) &&
-    let PlaybackState::Playing { .. } = instance.state() {
-        instance.stop(AudioTween::default());
+fn stop_ambient_music(ambient_sinks: Query<&AudioSink, With<AmbientMusic>>) {
+    for sink in &ambient_sinks {
+        sink.stop();
     }
 }
