@@ -1,34 +1,19 @@
 [package]
 name = "flappybust"
-version = "0.1.0"
+version = "0.13.1"
 edition = "2021"
 
 [dependencies]
 rand = "0.8.5"
-iyes_loopless = "0.9.1"
-itertools = "0.10.5"
-bevy_kira_audio = "0.13.0"
+itertools = "0.12.1"
 
 [dependencies.strum]
-version = "0.24.1"
+version = "0.26.2"
 features = ["derive"]
 
 [dependencies.bevy]
-version = "0.9.1"
-default-features = false
-features = [
-  "render",
-  "animation",
-  "bevy_asset",
-  "bevy_scene",
-  "bevy_winit",
-  "bevy_gilrs",
-  "png",
-  "hdr",
-  "filesystem_watcher",
-  "x11"
-]
+version = "0.13.1"
 
 [dependencies.bevy_asset_loader]
-version = "0.14.1"
+version = "0.20"
 features = ["2d"]

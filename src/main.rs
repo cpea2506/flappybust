@@ -1,16 +1,17 @@
 #![feature(let_chains)]
 
-mod constants;
 mod game;
 
 use bevy::{prelude::*, window::close_on_esc};
-use bevy_kira_audio::prelude::*;
-use constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use game::{game_over::events::RestartButtonDisplayed, GamePlugin};
-use iyes_loopless::prelude::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+const SCREEN_WIDTH: f32 = 288f32;
+const SCREEN_HEIGHT: f32 = 512f32;
+
+/// Represents the current state of the game.
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, States)]
 pub enum GameState {
+    #[default]
     Ready,
     Playing,
     Over,
@@ -19,61 +20,69 @@ pub enum GameState {
 fn main() {
     let mut app = App::new();
 
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        window: WindowDescriptor {
-            title: String::from("Flappybust 🦀🦋"),
-            width: SCREEN_WIDTH,
-            height: SCREEN_HEIGHT,
-            position: WindowPosition::At(Vec2 { x: 1100., y: 256. }),
-            ..default()
-        },
-        ..default()
-    }))
-    .add_plugin(AudioPlugin)
-    .add_loopless_state(GameState::Ready)
-    .add_enter_system(GameState::Ready, camera_setup)
-    .add_plugin(GamePlugin)
-    .add_system(input_setup) // event trigger on keyboard input
-    .add_system(close_on_esc)
-    .run();
+    app.init_state::<GameState>()
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Flappybust 🦀🦋".to_string(),
+                    resolution: (SCREEN_WIDTH, SCREEN_HEIGHT).into(),
+                    ..default()
+                }),
+                ..default()
+            }),
+            GamePlugin,
+        ))
+        .add_systems(Startup, setup_camera)
+        .add_systems(
+            Update,
+            (
+                start_game.run_if(in_state(GameState::Ready)),
+                restart_game.run_if(in_state(GameState::Over)),
+                close_on_esc,
+            ),
+        )
+        .run();
 }
 
-fn camera_setup(mut commands: Commands) {
+fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 }
 
-fn input_setup(
-    mut commands: Commands,
-    keyboards: Res<Input<KeyCode>>,
-    mut cursor_event: EventReader<CursorMoved>,
-    buttons: Res<Input<MouseButton>>,
-    game_state: Res<CurrentState<GameState>>,
-    restart_btn_event: EventReader<RestartButtonDisplayed>,
+fn start_game(
+    key: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
-    if keyboards.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
-        match game_state.0 {
-            GameState::Ready => commands.insert_resource(NextState(GameState::Playing)),
-            GameState::Over => {
-                if restart_btn_event.is_empty() {
-                    return;
-                }
+    if key.just_pressed(KeyCode::Space) || mouse.just_pressed(MouseButton::Left) {
+        next_state.set(GameState::Playing);
+    }
+}
 
-                if buttons.just_pressed(MouseButton::Left) {
-                    for ev in cursor_event.iter() {
-                        // the cursor must inside restart btn area
-                        if ev.position.y <= 200.
-                            || ev.position.y >= 237.
-                            || ev.position.x <= 90.
-                            || ev.position.x >= 200.
-                        {
-                            return;
-                        }
-                    }
-                }
+fn restart_game(
+    key: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    mut cursor_moved: EventReader<CursorMoved>,
+    restart_btn_displayed: EventReader<RestartButtonDisplayed>,
+) {
+    if restart_btn_displayed.is_empty() {
+        return;
+    }
 
-                commands.insert_resource(NextState(GameState::Ready));
+    if key.just_pressed(KeyCode::Space) {
+        next_state.set(GameState::Ready);
+    }
+
+    if mouse.just_pressed(MouseButton::Left) {
+        for cursor in cursor_moved.read() {
+            // The cursor must be inside restart btn area.
+            if cursor.position.y > 273f32
+                && cursor.position.y < 310f32
+                && cursor.position.x > 90f32
+                && cursor.position.x < 200f32
+            {
+                next_state.set(GameState::Ready);
             }
-            GameState::Playing => {}
         }
     }
 }

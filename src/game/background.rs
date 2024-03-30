@@ -1,12 +1,7 @@
-use crate::{
-    constants::{GAME_SPEED, SCREEN_WIDTH},
-    GameState,
-};
+use super::date_time::DateTime;
+use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use flappybust::ternary;
-use iyes_loopless::prelude::{AppLooplessStateExt, IntoConditionalSystem};
-
-use super::resources::DateTime;
 
 #[derive(Component, Default, Clone, Copy)]
 struct Background {
@@ -17,7 +12,7 @@ struct Background {
 impl Background {
     fn new(x: f32, y: f32, secondary: bool) -> Self {
         Background {
-            translation: Vec3 { x, y, z: 0. },
+            translation: Vec3 { x, y, z: 0f32 },
             secondary,
         }
     }
@@ -38,8 +33,8 @@ pub struct BackgroundPlugin;
 
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Ready, spawn)
-            .add_system(moving.run_in_state(GameState::Playing));
+        app.add_systems(OnEnter(GameState::Ready), spawn)
+            .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
     }
 }
 
@@ -56,12 +51,10 @@ fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<D
 }
 
 fn moving(mut background: Query<(&mut Background, &mut Transform)>) {
-    let screen_width = SCREEN_WIDTH;
-
     for (mut background, mut transform) in &mut background {
-        background.translation.x = (background.translation.x - GAME_SPEED) % screen_width;
+        background.translation.x = (background.translation.x - 1.5f32) % SCREEN_WIDTH;
 
         transform.translation.x =
-            background.translation.x + ternary!(background.secondary, SCREEN_WIDTH, 0.);
+            background.translation.x + ternary!(background.secondary, SCREEN_WIDTH, 0f32);
     }
 }

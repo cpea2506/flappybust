@@ -1,29 +1,10 @@
-use bevy::prelude::{Component, Handle, Image, Resource};
+use bevy::{ecs::component::Component, prelude::Resource};
 
-#[derive(Component)]
-pub struct ScoreRank(pub Rank);
-
-#[derive(Component)]
-pub struct ScoreText;
-
-#[derive(Component)]
-pub struct HighScoreText;
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum Rank {
-    Unit,
-    Ten,
-    Hunred,
-}
-
-#[derive(Resource, Clone, Default)]
+#[derive(Resource, Copy, Clone, Default)]
 pub struct Score {
     pub current: usize,
     pub highest: usize,
-    pub textures: Vec<Handle<Image>>,
 }
 
-impl Score {
-    pub const WIDTH: f32 = 24.;
-    pub const HEIGHT: f32 = 36.;
-}
+#[derive(Component)]
+pub struct CurrentScore;

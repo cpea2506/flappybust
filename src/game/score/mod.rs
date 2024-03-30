@@ -1,20 +1,16 @@
 pub mod components;
 use components::*;
 
-use crate::constants::SCREEN_HEIGHT;
-
-use bevy::prelude::*;
-use flappybust::{BooleanSwitcher, Math};
+use bevy::{prelude::*, sprite::Anchor::TopCenter};
+use flappybust::{despawn, BasicMath, BooleanSwitcher};
 use itertools::Itertools;
-use iyes_loopless::{
-    prelude::{AppLooplessStateExt, IntoConditionalSystem},
-    state::CurrentState,
-};
-use std::iter::successors;
+
+use crate::SCREEN_HEIGHT;
 
 use super::{
     audio::{AudioAssets, AudioEvent},
     bird::components::Bird,
+    game_over::events::ScoreboardDisplayed,
     pipe::Pipe,
     GameState,
 };
@@ -24,145 +20,146 @@ pub struct ScorePlugin;
 impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Score>()
-            .add_enter_system(GameState::Playing, playing_score_spawn)
-            .add_enter_system(GameState::Over, over_score_spawn)
-            .add_system(record.run_not_in_state(GameState::Ready));
+            .add_systems(OnEnter(GameState::Playing), spawn_current_score)
+            .add_systems(OnEnter(GameState::Over), despawn::<CurrentScore>)
+            .add_systems(
+                Update,
+                (
+                    (record, display_current_score).run_if(in_state(GameState::Playing)),
+                    display_scoreboard_score.run_if(in_state(GameState::Over)),
+                ),
+            );
     }
 }
 
-fn playing_score_spawn(
+fn spawn_current_score(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     prev_score: Res<Score>,
 ) {
     let score = Score {
-        textures: (0..10)
-            .map(|i| asset_server.load(format!("images/{i}.png")))
-            .collect(),
         current: 0,
         ..*prev_score
     };
 
+    commands
+        .spawn(SpriteBundle {
+            transform: Transform::from_xyz(0f32, SCREEN_HEIGHT.half(), 0.2),
+            ..default()
+        })
+        .with_children(|builder| {
+            builder.spawn((
+                Text2dBundle {
+                    text: Text::from_section(
+                        score.current.to_string(),
+                        TextStyle {
+                            font: asset_server.load("fonts/Teko-Bold.ttf"),
+                            font_size: 64f32,
+                            ..default()
+                        },
+                    )
+                    .with_justify(JustifyText::Center),
+                    text_anchor: TopCenter,
+                    ..default()
+                },
+                CurrentScore,
+            ));
+        });
+
     commands.insert_resource(score);
-
-    commands.spawn_batch(vec![
-        (SpriteBundle::default(), ScoreRank(Rank::Hunred)),
-        (SpriteBundle::default(), ScoreRank(Rank::Ten)),
-        (SpriteBundle::default(), ScoreRank(Rank::Unit)),
-    ]);
 }
 
-/// score display in scoreboard in Over state
-fn over_score_spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let text = Text::from_section(
-        "",
-        TextStyle {
-            font: asset_server.load("fonts/Teko-Bold.ttf"),
-            font_size: 45.0,
-            color: Color::WHITE,
-        },
-    );
+fn display_current_score(
+    score: Res<Score>,
+    mut current_score: Query<&mut Text, With<CurrentScore>>,
+) {
+    let mut current_score = current_score.single_mut();
 
-    commands.spawn((
-        Text2dBundle {
-            text: text.clone(),
-            visibility: Visibility::INVISIBLE,
-            transform: Transform::from_xyz(58., 87., 0.3),
-            ..default()
-        },
-        ScoreText,
-    ));
-
-    commands.spawn((
-        Text2dBundle {
-            text,
-            visibility: Visibility::INVISIBLE,
-            transform: Transform::from_xyz(58., 39., 0.3),
-            ..default()
-        },
-        HighScoreText,
-    ));
+    for section in &mut current_score.sections {
+        section.value = score.current.to_string();
+    }
 }
 
-#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+fn display_scoreboard_score(
+    mut commands: Commands,
+    score: Res<Score>,
+    asset_server: Res<AssetServer>,
+    mut scoreboard_displayed: EventReader<ScoreboardDisplayed>,
+) {
+    if scoreboard_displayed.is_empty() {
+        return;
+    }
+
+    let text_style = TextStyle {
+        font: asset_server.load("fonts/Teko-Bold.ttf"),
+        font_size: 40f32,
+        ..default()
+    };
+
+    let box_size = Vec2::new(68f32, 20f32);
+
+    commands
+        .spawn(SpriteBundle {
+            transform: Transform::from_xyz(63.8f32, 67f32, 0.3),
+            sprite: Sprite {
+                color: Color::NONE,
+                custom_size: Some(box_size),
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|builder| {
+            builder.spawn(Text2dBundle {
+                text: Text::from_section(score.current.to_string(), text_style.clone())
+                    .with_justify(JustifyText::Center),
+                ..default()
+            });
+        });
+
+    commands
+        .spawn(SpriteBundle {
+            transform: Transform::from_xyz(63.8f32, 18f32, 0.3),
+            sprite: Sprite {
+                color: Color::NONE,
+                custom_size: Some(box_size),
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|builder| {
+            builder.spawn(Text2dBundle {
+                text: Text::from_section(score.highest.to_string(), text_style)
+                    .with_justify(JustifyText::Center),
+                ..default()
+            });
+        });
+
+    scoreboard_displayed.clear();
+}
+
 fn record(
     audio_assets: Res<AudioAssets>,
     mut audio_event: EventWriter<AudioEvent>,
     bird: Query<&Transform, With<Bird>>,
-    game_state: Res<CurrentState<GameState>>,
     mut pipe: Query<(&mut Pipe, &Transform)>,
-    mut score_rank: Query<
-        (&ScoreRank, &mut Transform, &mut Handle<Image>),
-        (Without<Pipe>, Without<Bird>),
-    >,
-    mut score_text: Query<&mut Text, With<ScoreText>>,
-    mut hight_score_text: Query<&mut Text, (With<HighScoreText>, Without<ScoreText>)>,
     mut score: ResMut<Score>,
 ) {
     let bird_transform = bird.single();
 
     for ((mut pipe, pipe_transform), _) in pipe.iter_mut().tuples() {
-        // increase score each time the bird has passed the pipe
+        // Increase score each time the bird has passed the pipe.
         if bird_transform.translation.x + Bird::WIDTH.half() > pipe_transform.translation.x
             && !pipe.hidden
         {
-            audio_event.send(AudioEvent::new(&audio_assets.score, false));
-
             score.current += 1;
             score.highest = score.current.max(score.highest);
 
-            // prevent the score from increasing twice
-            // on frame changing too fast
+            audio_event.send(AudioEvent::new(&audio_assets.score, false));
+
+            // Prevent the score from increasing twice on frame changing too fast.
             pipe.hidden.on();
 
             break;
-        }
-    }
-
-    match game_state.0 {
-        GameState::Over => {
-            let mut score_text = score_text.single_mut();
-            score_text.sections[0].value = score.current.to_string();
-
-            let mut best_score_text = hight_score_text.single_mut();
-            best_score_text.sections[0].value = score.highest.to_string();
-        }
-        _ => {
-            // update texture base on score rank
-            // count number of digit
-            let digit_num =
-                successors(Some(score.current), |&n| (n >= 10).then_some(n / 10)).count();
-            let y_pos = SCREEN_HEIGHT.half() - 10. - Score::HEIGHT.half();
-
-            for (rank, mut transform, mut texture) in &mut score_rank {
-                match (digit_num, rank.0) {
-                    (1, Rank::Unit) => {
-                        *texture = score.textures[score.current % 10].clone();
-                        *transform = Transform::from_xyz(0., y_pos, 0.3);
-                    }
-                    (2, Rank::Unit) => {
-                        *texture = score.textures[score.current % 10].clone();
-                        *transform = Transform::from_xyz(Score::WIDTH.half(), y_pos, 0.3);
-                    }
-                    (2, Rank::Ten) => {
-                        *texture = score.textures[score.current / 10].clone();
-                        *transform = Transform::from_xyz(-Score::WIDTH.half(), y_pos, 0.3);
-                    }
-                    (3, Rank::Unit) => {
-                        *texture = score.textures[score.current % 10].clone();
-                        *transform = Transform::from_xyz(Score::WIDTH + 1., y_pos, 0.3);
-                    }
-                    (3, Rank::Ten) => {
-                        *texture = score.textures[score.current % 100 / 10].clone();
-                        *transform = Transform::from_xyz(0., y_pos, 0.3);
-                    }
-                    (3, Rank::Hunred) => {
-                        *texture = score.textures[score.current / 100].clone();
-                        *transform = Transform::from_xyz(-Score::WIDTH - 1., y_pos, 0.3);
-                    }
-                    _ => {}
-                }
-            }
         }
     }
 }

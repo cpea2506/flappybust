@@ -1,14 +1,10 @@
-use crate::{
-    constants::{GAME_SPEED, SCREEN_WIDTH},
-    GameState,
-};
+use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
-use flappybust::Math;
+use flappybust::{ternary, BasicMath};
 use itertools::Itertools;
-use iyes_loopless::prelude::*;
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
 
-use super::resources::DateTime;
+use super::date_time::DateTime;
 
 #[derive(Component, Default)]
 pub struct Pipe {
@@ -20,9 +16,9 @@ pub struct Pipe {
 }
 
 impl Pipe {
-    pub const WIDTH: f32 = 52.;
-    pub const HEIGHT: f32 = 320.;
-    const GAP: f32 = 80.;
+    pub const WIDTH: f32 = 52f32;
+    pub const HEIGHT: f32 = 320f32;
+    const GAP: f32 = 80f32;
 
     fn new(x: f32, y: f32, flip_y: bool) -> Self {
         Pipe {
@@ -48,7 +44,7 @@ impl Pipe {
         )
     }
 
-    /// generate number of pipes by `num_pipe`
+    /// Generate number of pipes by `num_pipe`.
     #[inline]
     fn genrate_self(
         num_pipe: u32,
@@ -65,12 +61,14 @@ impl Pipe {
         ));
 
         let mut rng = thread_rng();
-        let y_between = Uniform::new(-240., -50.);
+        let y_between = Uniform::new(-240f32, -50f32);
 
         // spawn first 2 pipes
         (0..num_pipe).for_each(|i| {
             let pipe = Pipe::new(
-                SCREEN_WIDTH.half() + Self::WIDTH.half() + 175. * i as f32,
+                ternary!(first_time, SCREEN_WIDTH, SCREEN_WIDTH.half())
+                    + Self::WIDTH.half()
+                    + 175f32 * i as f32,
                 y_between.sample(&mut rng),
                 false,
             );
@@ -92,8 +90,8 @@ pub struct PipePlugin;
 
 impl Plugin for PipePlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Playing, spawn)
-            .add_system(moving.run_in_state(GameState::Playing));
+        app.add_systems(OnEnter(GameState::Playing), spawn)
+            .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
     }
 }
 fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
@@ -112,10 +110,10 @@ fn moving(
     for ((pipe_entity, mut pipe_transform), (flipped_pipe_entity, mut flipped_pipe_transform)) in
         pipe.iter_mut().tuples()
     {
-        pipe_transform.translation.x -= GAME_SPEED;
-        flipped_pipe_transform.translation.x -= GAME_SPEED;
+        pipe_transform.translation.x -= 1f32;
+        flipped_pipe_transform.translation.x -= 1f32;
 
-        // remove pipes that are outside of screen
+        // Remove pipes that are outside of screen.
         if pipe_transform.translation.x <= -half_pipe_width - half_screen_width {
             Pipe::genrate_self(1, &mut commands, &asset_server, &datetime);
 
