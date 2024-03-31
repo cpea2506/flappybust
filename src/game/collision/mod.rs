@@ -1,3 +1,5 @@
+automod::dir!("src/game/collision");
+
 use crate::GameState;
 use bevy::{
     math::bounding::{Aabb2d, IntersectsVolume},
@@ -6,15 +8,14 @@ use bevy::{
 use flappybust::BasicMath;
 use itertools::Itertools;
 
-use super::{
-    audio::{AudioAssets, AudioEvent},
-    base::Base,
-    bird::{components::Bird, events::DeathEvent},
-    pipe::Pipe,
-};
+use events::CollisionEvent;
 
-#[derive(Event, Default)]
-pub struct CollisionEvent;
+use super::{
+    audio::{events::AudioEvent, resources::AudioAssets},
+    base::components::Base,
+    bird::{components::Bird, events::DeathEvent},
+    pipe::components::Pipe,
+};
 
 pub struct CollisionPlugin;
 
@@ -40,9 +41,12 @@ fn check_collision(
 ) {
     let (mut bird_transform, bird) = bird.single_mut();
 
-    // there are two bases (for animate purpose) but we only need to take one
-    // because bird only collides with the top of any base
-    let base = bases.iter().next().expect("base must be initialized first");
+    // There are two bases (for animating purpose) but we only need to take one
+    // because bird only collides with the top of any base.
+    let base = bases
+        .iter()
+        .next()
+        .expect("Base must be initialized first.");
 
     // check if bird bottom collides with top base
     if bird_transform.translation.y - bird.size.y.half() <= base.collider_pos {

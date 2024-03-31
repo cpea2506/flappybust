@@ -1,17 +1,21 @@
-pub mod components;
+automod::dir!(pub "src/game/score");
+
+use bevy_asset_loader::asset_collection::AssetCollectionApp;
 use components::*;
 
 use bevy::{prelude::*, sprite::Anchor::TopCenter};
-use flappybust::{despawn, BasicMath, BooleanSwitcher};
+use flappybust::{despawn, BasicMath, Switcher};
 use itertools::Itertools;
 
 use crate::SCREEN_HEIGHT;
 
+use self::resources::ScoreAssets;
+
 use super::{
-    audio::{AudioAssets, AudioEvent},
+    audio::{events::AudioEvent, resources::AudioAssets},
     bird::components::Bird,
     game_over::events::ScoreboardDisplayed,
-    pipe::Pipe,
+    pipe::components::Pipe,
     GameState,
 };
 
@@ -20,6 +24,7 @@ pub struct ScorePlugin;
 impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Score>()
+            .init_collection::<ScoreAssets>()
             .add_systems(OnEnter(GameState::Playing), spawn_current_score)
             .add_systems(OnEnter(GameState::Over), despawn::<CurrentScore>)
             .add_systems(
@@ -34,7 +39,7 @@ impl Plugin for ScorePlugin {
 
 fn spawn_current_score(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    score_assets: Res<ScoreAssets>,
     prev_score: Res<Score>,
 ) {
     let score = Score {
@@ -53,7 +58,7 @@ fn spawn_current_score(
                     text: Text::from_section(
                         score.current.to_string(),
                         TextStyle {
-                            font: asset_server.load("fonts/Teko-Bold.ttf"),
+                            font: score_assets.teko_bold.clone(),
                             font_size: 64f32,
                             ..default()
                         },
@@ -83,7 +88,7 @@ fn display_current_score(
 fn display_scoreboard_score(
     mut commands: Commands,
     score: Res<Score>,
-    asset_server: Res<AssetServer>,
+    score_assets: Res<ScoreAssets>,
     mut scoreboard_displayed: EventReader<ScoreboardDisplayed>,
 ) {
     if scoreboard_displayed.is_empty() {
@@ -91,7 +96,7 @@ fn display_scoreboard_score(
     }
 
     let text_style = TextStyle {
-        font: asset_server.load("fonts/Teko-Bold.ttf"),
+        font: score_assets.teko_bold.clone(),
         font_size: 40f32,
         ..default()
     };

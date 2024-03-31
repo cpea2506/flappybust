@@ -1,50 +1,24 @@
+automod::dir!(pub "src/game/base");
+
 use crate::GameState;
 use bevy::prelude::*;
+use bevy_asset_loader::asset_collection::AssetCollectionApp;
+use components::Base;
 use flappybust::{ternary, BasicMath};
 
-#[derive(Component, Default)]
-pub struct Base {
-    pub collider_pos: f32,
-
-    translation: Vec3,
-    secondary: bool,
-}
-
-impl Base {
-    pub const WIDTH: f32 = 336f32;
-    pub const HEIGHT: f32 = 112f32;
-    const RESET_POINT: f32 = Self::WIDTH - 24f32;
-
-    fn new(x: f32, y: f32, secondary: bool) -> Self {
-        Base {
-            translation: Vec3::new(x, y, 0.4),
-            secondary,
-            collider_pos: y + Self::HEIGHT.half(),
-        }
-    }
-
-    fn generate_bundle(self, texture: &Handle<Image>) -> (SpriteBundle, Self) {
-        (
-            SpriteBundle {
-                texture: texture.clone(),
-                transform: Transform::from_translation(self.translation),
-                ..default()
-            },
-            self,
-        )
-    }
-}
+use self::resources::BaseAssets;
 
 pub struct BasePlugin;
 
 impl Plugin for BasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Ready), spawn)
+        app.init_collection::<BaseAssets>()
+            .add_systems(OnEnter(GameState::Ready), spawn)
             .add_systems(Update, moving.run_if(not(in_state(GameState::Over))));
     }
 }
 
-fn spawn(mut commands: Commands, window: Query<&Window>, asset_server: Res<AssetServer>) {
+fn spawn(mut commands: Commands, window: Query<&Window>, base_assets: Res<BaseAssets>) {
     if let Ok(window) = window.get_single() {
         let base = Base::new(
             0f32,
@@ -52,7 +26,7 @@ fn spawn(mut commands: Commands, window: Query<&Window>, asset_server: Res<Asset
             false,
         );
         let secondary_base = Base::new(Base::WIDTH, base.translation.y, true);
-        let texture = asset_server.load("images/base.png");
+        let texture = base_assets.base.clone();
 
         commands.spawn_batch(vec![
             base.generate_bundle(&texture),

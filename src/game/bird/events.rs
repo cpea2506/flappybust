@@ -4,4 +4,4 @@ use bevy::ecs::event::Event;
 pub struct DeathEvent;
 
 #[derive(Default, Event)]
-pub struct BirdToTheHeaven;
+pub struct InTheHeaven;

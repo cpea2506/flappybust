@@ -4,7 +4,7 @@ use strum::AsRefStr;
 
 #[derive(AsRefStr, Clone, Copy)]
 #[strum(serialize_all = "lowercase")]
-pub enum BirdColor {
+pub(super) enum BirdColor {
     Red,
     Blue,
     Yellow,
@@ -23,7 +23,7 @@ impl Distribution<BirdColor> for Standard {
 type AnimationFrames = [Handle<Image>; 3];
 
 #[derive(Component)]
-pub struct FlapAnimation {
+pub(super) struct FlapAnimation {
     pub timer: Timer,
     pub frames: AnimationFrames,
     pub current_frame: usize,
@@ -49,8 +49,8 @@ pub struct Bird {
 }
 
 impl Bird {
-    pub const WIDTH: f32 = 34.;
-    pub const HEIGHT: f32 = 24.;
+    pub const WIDTH: f32 = 34f32;
+    pub const HEIGHT: f32 = 24f32;
     pub const DEFAULT_VELOCITY: f32 = -2.5;
 
     pub fn new(x: f32, y: f32) -> Self {
@@ -65,6 +65,6 @@ impl Bird {
 }
 
 #[derive(Component)]
-pub struct BirdSoul {
+pub(super) struct BirdSoul {
     pub translation: Vec3,
 }

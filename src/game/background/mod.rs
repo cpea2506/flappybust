@@ -1,48 +1,36 @@
+automod::dir!("src/game/background");
+
+use components::Background;
+use resources::BackgroundAssets;
+
 use super::date_time::DateTime;
 use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
+use bevy_asset_loader::asset_collection::AssetCollectionApp;
 use flappybust::ternary;
-
-#[derive(Component, Default, Clone, Copy)]
-struct Background {
-    translation: Vec3,
-    secondary: bool,
-}
-
-impl Background {
-    fn new(x: f32, y: f32, secondary: bool) -> Self {
-        Background {
-            translation: Vec3 { x, y, z: 0f32 },
-            secondary,
-        }
-    }
-
-    fn generate_bundle(self, texture: &Handle<Image>) -> (SpriteBundle, Self) {
-        (
-            SpriteBundle {
-                texture: texture.clone(),
-                transform: Transform::from_translation(self.translation),
-                ..default()
-            },
-            self,
-        )
-    }
-}
 
 pub struct BackgroundPlugin;
 
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Ready), spawn)
+        app.init_collection::<BackgroundAssets>()
+            .add_systems(OnEnter(GameState::Ready), spawn)
             .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
     }
 }
 
-fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
+fn spawn(
+    mut commands: Commands,
+    background_assets: Res<BackgroundAssets>,
+    datetime: Res<DateTime>,
+) {
     let background = Background::default();
     let secondary_background =
         Background::new(background.translation.x, background.translation.y, true);
-    let texture = asset_server.load(format!("images/bg_{}.png", (*datetime).as_ref()));
+    let texture = match *datetime {
+        DateTime::Day => background_assets.day.clone(),
+        DateTime::Night => background_assets.night.clone(),
+    };
 
     commands.spawn_batch(vec![
         background.generate_bundle(&texture),

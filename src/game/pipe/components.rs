@@ -1,23 +1,23 @@
-use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use flappybust::{ternary, BasicMath};
-use itertools::Itertools;
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
 
-use super::date_time::DateTime;
+use crate::{game::date_time::DateTime, SCREEN_WIDTH};
+
+use super::resources::PipeAssets;
 
 #[derive(Component, Default)]
 pub struct Pipe {
     pub size: Vec2,
-    pub flip_y: bool,
     pub hidden: bool,
 
+    flip_y: bool,
     translation: Vec3,
 }
 
 impl Pipe {
-    pub const WIDTH: f32 = 52f32;
-    pub const HEIGHT: f32 = 320f32;
+    pub(super) const WIDTH: f32 = 52f32;
+    pub(super) const HEIGHT: f32 = 320f32;
     const GAP: f32 = 80f32;
 
     fn new(x: f32, y: f32, flip_y: bool) -> Self {
@@ -46,33 +46,31 @@ impl Pipe {
 
     /// Generate number of pipes by `num_pipe`.
     #[inline]
-    fn genrate_self(
+    pub(super) fn genrate_self(
         num_pipe: u32,
+        first_time: bool,
         commands: &mut Commands,
-        asset_server: &Res<AssetServer>,
+        pipe_assets: &Res<PipeAssets>,
         datetime: &Res<DateTime>,
     ) {
-        let texture = asset_server.load(format!(
-            "images/pipe_{}.png",
-            match **datetime {
-                DateTime::Day => "green",
-                _ => "red",
-            }
-        ));
+        let texture = match **datetime {
+            DateTime::Day => pipe_assets.green.clone(),
+            DateTime::Night => pipe_assets.red.clone(),
+        };
 
         let mut rng = thread_rng();
         let y_between = Uniform::new(-240f32, -50f32);
 
         // Spawn first 2 pipes.
         (0..num_pipe).for_each(|i| {
-            let pipe = Pipe::new(
+            let pipe = Self::new(
                 ternary!(first_time, SCREEN_WIDTH, SCREEN_WIDTH.half())
                     + Self::WIDTH.half()
                     + 175f32 * i as f32,
                 y_between.sample(&mut rng),
                 false,
             );
-            let flipped_pipe = Pipe::new(
+            let flipped_pipe = Self::new(
                 pipe.translation.x,
                 pipe.translation.y + Self::GAP + Self::HEIGHT,
                 true,
@@ -83,42 +81,5 @@ impl Pipe {
                 flipped_pipe.generate_bundle(&texture),
             ]);
         });
-    }
-}
-
-pub struct PipePlugin;
-
-impl Plugin for PipePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn)
-            .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
-    }
-}
-fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, datetime: Res<DateTime>) {
-    Pipe::genrate_self(2, &mut commands, &asset_server, &datetime);
-}
-
-fn moving(
-    mut commands: Commands,
-    mut pipe: Query<(Entity, &mut Transform), With<Pipe>>,
-    asset_server: Res<AssetServer>,
-    datetime: Res<DateTime>,
-) {
-    let half_pipe_width = Pipe::WIDTH.half();
-    let half_screen_width = SCREEN_WIDTH.half();
-
-    for ((pipe_entity, mut pipe_transform), (flipped_pipe_entity, mut flipped_pipe_transform)) in
-        pipe.iter_mut().tuples()
-    {
-        pipe_transform.translation.x -= 1f32;
-        flipped_pipe_transform.translation.x -= 1f32;
-
-        // Remove pipes that are outside of screen.
-        if pipe_transform.translation.x <= -half_pipe_width - half_screen_width {
-            Pipe::genrate_self(1, &mut commands, &asset_server, &datetime);
-
-            commands.entity(pipe_entity).despawn();
-            commands.entity(flipped_pipe_entity).despawn();
-        }
     }
 }

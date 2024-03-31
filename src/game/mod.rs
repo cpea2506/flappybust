@@ -1,8 +1,10 @@
-mod collisions;
-use collisions::CollisionPlugin;
+automod::dir!("src/game");
 
-mod audio;
-use audio::{AmbientMusic, AudioAssets, AudioEvent, AudioPlugin};
+mod collision;
+use collision::CollisionPlugin;
+
+pub mod audio;
+use audio::{components::AmbientMusic, events::AudioEvent, resources::AudioAssets, AudioPlugin};
 
 mod background;
 use background::BackgroundPlugin;
@@ -10,7 +12,6 @@ use background::BackgroundPlugin;
 mod base;
 use base::BasePlugin;
 
-mod date_time;
 use date_time::DateTime;
 
 mod bird;
@@ -19,14 +20,14 @@ use bird::BirdPlugin;
 pub mod game_over;
 use game_over::GameOverPlugin;
 
-mod pipe;
+pub mod pipe;
 use pipe::PipePlugin;
 
 mod score;
 use score::ScorePlugin;
 
-mod start_message;
-use start_message::StartMessagePlugin;
+mod ready_message;
+use ready_message::ReadyMessagePlugin;
 
 use bevy::prelude::*;
 
@@ -41,7 +42,7 @@ impl Plugin for GamePlugin {
         app.init_resource::<DateTime>()
             .add_plugins((
                 AudioPlugin,
-                StartMessagePlugin,
+                ReadyMessagePlugin,
                 BackgroundPlugin,
                 BasePlugin,
                 BirdPlugin,

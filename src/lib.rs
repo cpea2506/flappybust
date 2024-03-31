@@ -3,16 +3,16 @@
 use bevy::prelude::*;
 
 /// Add useful helper methods for Boolean type.
-pub trait BooleanSwitcher {
-    /// Change Boolean value to true.
+pub trait Switcher {
+    /// Change value to open state.
     fn on(&mut self);
-    /// Change Boolean value to false.
+    /// Change value value to close state.
     fn off(&mut self);
-    /// Toggle a Boolean value from `true` to `false` or from `false` to `true`.
+    /// Toggle a value from `open` to `close` state or from `close` to `open` state.
     fn toggle(&mut self);
 }
 
-impl BooleanSwitcher for bool {
+impl Switcher for bool {
     fn off(&mut self) {
         *self = false
     }
@@ -23,6 +23,24 @@ impl BooleanSwitcher for bool {
 
     fn toggle(&mut self) {
         *self = !*self;
+    }
+}
+
+impl Switcher for Visibility {
+    fn off(&mut self) {
+        *self = Visibility::Hidden;
+    }
+
+    fn on(&mut self) {
+        *self = Visibility::Visible;
+    }
+
+    fn toggle(&mut self) {
+        *self = match self {
+            Visibility::Hidden => Visibility::Visible,
+            Visibility::Visible => Visibility::Hidden,
+            _ => Visibility::Inherited,
+        };
     }
 }
 

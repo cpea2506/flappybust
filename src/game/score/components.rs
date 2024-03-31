@@ -7,4 +7,4 @@ pub struct Score {
 }
 
 #[derive(Component)]
-pub struct CurrentScore;
+pub(super) struct CurrentScore;

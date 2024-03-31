@@ -1,13 +1,15 @@
-pub mod components;
-pub mod events;
+automod::dir!(pub "src/game/game_over");
 
-use super::audio::{AudioAssets, AudioEvent};
-use super::bird::events::{BirdToTheHeaven, DeathEvent};
-use super::score::components::Score;
+use super::{
+    audio::{events::AudioEvent, resources::AudioAssets},
+    bird::events::{DeathEvent, InTheHeaven},
+    score::components::Score,
+};
 use crate::GameState;
 use bevy::prelude::*;
 use components::*;
 use events::*;
+use flappybust::Switcher;
 
 pub struct GameOverPlugin;
 
@@ -15,7 +17,7 @@ impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ScoreboardDisplayed>()
             .add_event::<MedalDisplayed>()
-            .add_event::<BirdToTheHeaven>()
+            .add_event::<InTheHeaven>()
             .add_event::<RestartButtonDisplayed>()
             .add_event::<GameOverTextDisplayed>()
             .add_systems(OnEnter(GameState::Over), (spawn_game_over, spawn_medal))
@@ -64,16 +66,18 @@ fn spawn_game_over(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn display_restart_btn(
     mut restart_btn: Query<&mut Visibility, With<RestartButton>>,
-    bird_to_the_heaven_event: EventReader<BirdToTheHeaven>,
+    in_the_heaven: EventReader<InTheHeaven>,
     mut restart_btn_event: EventWriter<RestartButtonDisplayed>,
 ) {
-    if bird_to_the_heaven_event.is_empty() {
+    if in_the_heaven.is_empty() {
         return;
     }
 
     let mut visibility = restart_btn.single_mut();
 
-    *visibility = Visibility::Visible;
+    if matches!(*visibility, Visibility::Hidden) {
+        visibility.on();
+    }
 
     restart_btn_event.send_default();
 }
@@ -168,7 +172,9 @@ fn scale_medal(
         return;
     }
 
-    *visibility = Visibility::Visible;
+    if matches!(*visibility, Visibility::Hidden) {
+        visibility.on();
+    }
 
     // Scale both xy for circle.
     let scale_direction = Vec3::X + Vec3::Y;
@@ -178,7 +184,7 @@ fn scale_medal(
     transform.scale = (transform.scale - scale_direction).clamp_length_min(unit_length);
 
     // Play audio if and only if the scale length is reached.
-    // (orignal + scale_direction) length
+    // (orignal + scale_direction) length.
     if transform.scale == (Vec3::X + Vec3::Y + scale_direction) {
         audio_event.send(AudioEvent::new(&audio_assets.ding, false));
     }
