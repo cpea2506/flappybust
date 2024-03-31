@@ -25,8 +25,9 @@ impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Score>()
             .init_collection::<ScoreAssets>()
-            .add_systems(OnEnter(GameState::Playing), spawn_current_score)
+            .add_systems(OnEnter(GameState::Ready), despawn::<ScoreboardScore>)
             .add_systems(OnEnter(GameState::Over), despawn::<CurrentScore>)
+            .add_systems(OnEnter(GameState::Playing), spawn_current_score)
             .add_systems(
                 Update,
                 (
@@ -114,11 +115,14 @@ fn display_scoreboard_score(
             ..default()
         })
         .with_children(|builder| {
-            builder.spawn(Text2dBundle {
-                text: Text::from_section(score.current.to_string(), text_style.clone())
-                    .with_justify(JustifyText::Center),
-                ..default()
-            });
+            builder.spawn((
+                Text2dBundle {
+                    text: Text::from_section(score.current.to_string(), text_style.clone())
+                        .with_justify(JustifyText::Center),
+                    ..default()
+                },
+                ScoreboardScore,
+            ));
         });
 
     commands
@@ -132,11 +136,14 @@ fn display_scoreboard_score(
             ..default()
         })
         .with_children(|builder| {
-            builder.spawn(Text2dBundle {
-                text: Text::from_section(score.highest.to_string(), text_style)
-                    .with_justify(JustifyText::Center),
-                ..default()
-            });
+            builder.spawn((
+                Text2dBundle {
+                    text: Text::from_section(score.highest.to_string(), text_style)
+                        .with_justify(JustifyText::Center),
+                    ..default()
+                },
+                ScoreboardScore,
+            ));
         });
 
     scoreboard_displayed.clear();

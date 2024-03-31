@@ -6,7 +6,7 @@ use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use bevy_asset_loader::asset_collection::AssetCollectionApp;
 use components::Pipe;
-use flappybust::BasicMath;
+use flappybust::{despawn, BasicMath};
 use itertools::Itertools;
 use resources::PipeAssets;
 
@@ -15,6 +15,7 @@ pub struct PipePlugin;
 impl Plugin for PipePlugin {
     fn build(&self, app: &mut App) {
         app.init_collection::<PipeAssets>()
+            .add_systems(OnEnter(GameState::Ready), despawn::<Pipe>)
             .add_systems(OnEnter(GameState::Playing), spawn)
             .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
     }

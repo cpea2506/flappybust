@@ -7,14 +7,14 @@ use super::date_time::DateTime;
 use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use bevy_asset_loader::asset_collection::AssetCollectionApp;
-use flappybust::ternary;
+use flappybust::{despawn, ternary};
 
 pub struct BackgroundPlugin;
 
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
         app.init_collection::<BackgroundAssets>()
-            .add_systems(OnEnter(GameState::Ready), spawn)
+            .add_systems(OnEnter(GameState::Ready), (despawn::<Background>, spawn))
             .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
     }
 }

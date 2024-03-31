@@ -4,7 +4,7 @@ use crate::GameState;
 use bevy::prelude::*;
 use bevy_asset_loader::asset_collection::AssetCollectionApp;
 use components::Base;
-use flappybust::{ternary, BasicMath};
+use flappybust::{despawn, ternary, BasicMath};
 
 use self::resources::BaseAssets;
 
@@ -13,7 +13,7 @@ pub struct BasePlugin;
 impl Plugin for BasePlugin {
     fn build(&self, app: &mut App) {
         app.init_collection::<BaseAssets>()
-            .add_systems(OnEnter(GameState::Ready), spawn)
+            .add_systems(OnEnter(GameState::Ready), (despawn::<Base>, spawn))
             .add_systems(Update, moving.run_if(not(in_state(GameState::Over))));
     }
 }

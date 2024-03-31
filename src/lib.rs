@@ -71,14 +71,9 @@ pub macro ternary($condition:expr, $then:expr, $else:expr) {
     }
 }
 
-/// Despawn all entities in the world.
-pub fn despawn_all(mut commands: Commands, entities: Query<Entity>) {
+/// Despawn entity that has specified components in the world.
+pub fn despawn<T: Component>(mut commands: Commands, entities: Query<Entity, With<T>>) {
     for entity in &entities {
         commands.entity(entity).despawn();
     }
-}
-
-/// Despawn entity that has specified component in the world.
-pub fn despawn<T: Component>(mut commands: Commands, entity: Query<Entity, With<T>>) {
-    commands.entity(entity.single()).despawn();
 }

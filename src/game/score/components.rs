@@ -8,3 +8,6 @@ pub struct Score {
 
 #[derive(Component)]
 pub(super) struct CurrentScore;
+
+#[derive(Component)]
+pub(super) struct ScoreboardScore;

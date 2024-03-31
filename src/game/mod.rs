@@ -31,8 +31,6 @@ use ready_message::ReadyMessagePlugin;
 
 use bevy::prelude::*;
 
-use flappybust::despawn_all;
-
 use crate::GameState;
 
 pub struct GamePlugin;
@@ -51,10 +49,7 @@ impl Plugin for GamePlugin {
                 ScorePlugin,
                 GameOverPlugin,
             ))
-            .add_systems(
-                OnExit(GameState::Over),
-                (despawn_all, init_datetime, stop_all_songs),
-            )
+            .add_systems(OnExit(GameState::Over), (init_datetime, stop_all_songs))
             .add_systems(OnEnter(GameState::Playing), play_ambient_music)
             .add_systems(OnExit(GameState::Playing), stop_ambient_music);
     }

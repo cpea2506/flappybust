@@ -2,7 +2,7 @@ automod::dir!(pub "src/game/bird");
 
 use bevy_asset_loader::asset_collection::AssetCollectionApp;
 use components::*;
-use flappybust::{BasicMath, Switcher};
+use flappybust::{despawn, BasicMath, Switcher};
 use resources::{BirdAssets, BouncingState};
 
 use events::*;
@@ -21,7 +21,14 @@ impl Plugin for BirdPlugin {
         app.init_resource::<BouncingState>()
             .init_collection::<BirdAssets>()
             .add_event::<DeathEvent>()
-            .add_systems(OnEnter(GameState::Ready), spawn)
+            .add_systems(
+                OnEnter(GameState::Ready),
+                (
+                    despawn::<Bird>,
+                    despawn::<BirdSoul>,
+                    spawn,
+                ),
+            )
             .add_systems(OnEnter(GameState::Over), bird_soul_spawn)
             .add_systems(
                 Update,
