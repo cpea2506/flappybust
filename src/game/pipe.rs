@@ -63,7 +63,7 @@ impl Pipe {
         let mut rng = thread_rng();
         let y_between = Uniform::new(-240f32, -50f32);
 
-        // spawn first 2 pipes
+        // Spawn first 2 pipes.
         (0..num_pipe).for_each(|i| {
             let pipe = Pipe::new(
                 ternary!(first_time, SCREEN_WIDTH, SCREEN_WIDTH.half())
