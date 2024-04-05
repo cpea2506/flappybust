@@ -23,11 +23,7 @@ impl Plugin for BirdPlugin {
             .add_event::<DeathEvent>()
             .add_systems(
                 OnEnter(GameState::Ready),
-                (
-                    despawn::<Bird>,
-                    despawn::<BirdSoul>,
-                    spawn,
-                ),
+                (despawn::<Bird>, despawn::<BirdSoul>, spawn),
             )
             .add_systems(OnEnter(GameState::Over), bird_soul_spawn)
             .add_systems(
