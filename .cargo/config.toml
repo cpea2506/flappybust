@@ -18,5 +18,8 @@ runner = "wasm-server-runner"
 opt-level = 3
 
 [profile.release]
-lto = "thin"
-opt-level = 's'
+lto = true
+opt-level = 3
+codegen-units = 1
+incremental = false
+debug = false
