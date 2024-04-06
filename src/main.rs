@@ -2,7 +2,7 @@
 
 mod game;
 
-use bevy::{prelude::*, window::close_on_esc};
+use bevy::{asset::AssetMetaCheck, prelude::*, window::close_on_esc};
 use game::{game_over::events::RestartButtonDisplayed, GamePlugin};
 
 const SCREEN_WIDTH: f32 = 288f32;
@@ -21,6 +21,7 @@ fn main() {
     let mut app = App::new();
 
     app.init_state::<GameState>()
+        .insert_resource(AssetMetaCheck::Never)
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
