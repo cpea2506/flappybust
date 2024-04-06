@@ -1,54 +1,58 @@
 automod::dir!(pub "src/game/bird");
 
-use bevy_asset_loader::asset_collection::AssetCollectionApp;
-use components::*;
-use flappybust::{despawn, BasicMath, Switcher};
-use resources::{BirdAssets, BouncingState};
-
-use events::*;
-
 use super::{
-    audio::events::AudioEvent, audio::resources::AudioAssets, base::components::Base,
-    game_over::events::MedalDisplayed, GameState,
+    audio::events::AudioEvent, base::components::Base, game_over::events::MedalDisplayed,
+    AudioAssets, GameState, ImageAssets,
 };
 use bevy::prelude::*;
+use components::*;
+use events::*;
+use flappybust::{despawn, BasicMath, Switcher};
 use rand::random;
+use resources::BouncingState;
 
+/// Bird logic.
 pub struct BirdPlugin;
 
 impl Plugin for BirdPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<BouncingState>()
-            .init_collection::<BirdAssets>()
             .add_event::<DeathEvent>()
-            .add_systems(
-                OnEnter(GameState::Ready),
-                (despawn::<Bird>, despawn::<BirdSoul>, spawn),
-            )
-            .add_systems(OnEnter(GameState::Over), bird_soul_spawn)
+            .add_systems(OnEnter(GameState::Ready), spawn)
             .add_systems(
                 Update,
                 (
                     bounce_vertical.run_if(in_state(GameState::Ready)),
-                    fall.run_if(not(in_state(GameState::Ready))),
+                    (
+                        fall.run_if(not(in_state(GameState::Ready))),
+                        flap.run_if(not(in_state(GameState::Over))),
+                    )
+                        .run_if(not(in_state(GameState::AssetLoading))),
                     fly.run_if(in_state(GameState::Playing)),
-                    flap.run_if(not(in_state(GameState::Over))),
                     bird_soul_fly.run_if(in_state(GameState::Over)),
                 ),
+            )
+            .add_systems(OnEnter(GameState::Over), bird_soul_spawn)
+            .add_systems(
+                OnExit(GameState::Over),
+                (despawn::<Bird>, despawn::<BirdSoul>),
             );
     }
 }
 
-fn spawn(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>) {
     let bird_color = random::<BirdColor>();
-    let animation_frames = ["up", "mid", "down"]
-        .map(|state| asset_server.load(format!("images/bird_{}_{state}.png", bird_color.as_ref())));
-    let bird = Bird::new(-53., 9.);
+    let animation_frames = match bird_color {
+        BirdColor::Red => image_assets.red_birds.clone(),
+        BirdColor::Blue => image_assets.blue_birds.clone(),
+        BirdColor::Yellow => image_assets.yellow_birds.clone(),
+    };
+    let bird = Bird::new(-53f32, 9f32);
 
     commands.spawn((
         bird,
         SpriteBundle {
-            texture: animation_frames[0].clone(), // 0. up, 1. mid, 2. down
+            texture: animation_frames[0].clone(),
             transform: Transform::from_translation(bird.translation),
             ..default()
         },
@@ -60,7 +64,7 @@ fn bird_soul_spawn(
     mut commands: Commands,
     bird: Query<&Bird>,
     base: Query<&Base>,
-    bird_assets: Res<BirdAssets>,
+    image_assets: Res<ImageAssets>,
 ) {
     let bird = bird.single();
     let base = base.iter().next().expect("Base must be initialized first.");
@@ -72,7 +76,7 @@ fn bird_soul_spawn(
 
     commands.spawn((
         SpriteBundle {
-            texture: bird_assets.bird_soul.clone(),
+            texture: image_assets.bird_soul.clone(),
             visibility: Visibility::Hidden,
             transform: Transform::from_translation(translation),
             ..default()

@@ -7,6 +7,8 @@ edition = "2021"
 rand = "0.8.5"
 itertools = "0.12.1"
 automod = "1.0.14"
-strum = { version = "0.26.2", features = ["derive"] }
 bevy = "0.13.2"
-bevy_asset_loader = { version = "0.20.0", features = ["2d"] }
+bevy_asset_loader = { version = "0.20.0", features = [
+    "2d",
+    "standard_dynamic_assets",
+] }

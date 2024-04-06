@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 use rand::distributions::{Distribution, Standard};
-use strum::AsRefStr;
 
-#[derive(AsRefStr, Clone, Copy)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Clone, Copy)]
 pub(super) enum BirdColor {
     Red,
     Blue,
@@ -20,7 +18,7 @@ impl Distribution<BirdColor> for Standard {
     }
 }
 
-type AnimationFrames = [Handle<Image>; 3];
+type AnimationFrames = Vec<Handle<Image>>;
 
 #[derive(Component)]
 pub(super) struct FlapAnimation {

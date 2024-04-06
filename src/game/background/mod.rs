@@ -1,40 +1,33 @@
 automod::dir!("src/game/background");
 
-use components::Background;
-use resources::BackgroundAssets;
-
-use super::date_time::DateTime;
+use super::{DateTime, ImageAssets};
 use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
-use bevy_asset_loader::asset_collection::AssetCollectionApp;
-use flappybust::ternary;
+use components::Background;
 
+/// Background logic.
 pub struct BackgroundPlugin;
 
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
-        app.init_collection::<BackgroundAssets>()
-            .add_systems(OnEnter(GameState::Ready), spawn)
-            .add_systems(Update, moving.run_if(not(in_state(GameState::Over))));
+        app.add_systems(
+            OnEnter(GameState::Ready),
+            (
+                spawn.run_if(not(has_existed)),
+                replace_texture.run_if(has_existed),
+            ),
+        )
+        .add_systems(Update, moving.run_if(not(in_state(GameState::Over))));
     }
 }
 
-fn spawn(
-    mut commands: Commands,
-    background: Query<(), With<Background>>,
-    background_assets: Res<BackgroundAssets>,
-    datetime: Res<DateTime>,
-) {
-    if !background.is_empty() {
-        return;
-    }
-
-    let background = Background::default();
+fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>, datetime: Res<DateTime>) {
+    let background = Background::new(0f32, 0f32, false);
     let secondary_background =
         Background::new(background.translation.x, background.translation.y, true);
     let texture = match *datetime {
-        DateTime::Day => background_assets.day.clone(),
-        DateTime::Night => background_assets.night.clone(),
+        DateTime::Day => image_assets.bg_day.clone(),
+        DateTime::Night => image_assets.bg_night.clone(),
     };
 
     commands.spawn_batch(vec![
@@ -43,11 +36,37 @@ fn spawn(
     ]);
 }
 
+fn replace_texture(
+    mut backgrounds: Query<&mut Handle<Image>, With<Background>>,
+    datetime: Res<DateTime>,
+    image_assets: Res<ImageAssets>,
+) {
+    let new_texture = match *datetime {
+        DateTime::Day => image_assets.bg_day.clone(),
+        DateTime::Night => image_assets.bg_night.clone(),
+    };
+
+    for mut texture in &mut backgrounds {
+        if *texture == new_texture {
+            return;
+        }
+
+        *texture = new_texture.clone_weak();
+    }
+}
+
+fn has_existed(background: Query<(), With<Background>>) -> bool {
+    !background.is_empty()
+}
+
 fn moving(mut background: Query<(&mut Background, &mut Transform)>) {
     for (mut background, mut transform) in &mut background {
         background.translation.x = (background.translation.x - 1.5f32) % SCREEN_WIDTH;
 
-        transform.translation.x =
-            background.translation.x + ternary!(background.secondary, SCREEN_WIDTH, 0f32);
+        if background.secondary {
+            transform.translation.x = background.translation.x + SCREEN_WIDTH;
+        } else {
+            transform.translation.x = background.translation.x;
+        }
     }
 }

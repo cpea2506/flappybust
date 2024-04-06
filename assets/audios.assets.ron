@@ -1,0 +1,27 @@
+({
+    "theme": File (
+        path: "sounds/theme.ogg"
+    ),
+    "die": File (
+        path: "sounds/die.ogg"
+    ),
+    "ding": File (
+        path: "sounds/ding.ogg"
+    ),
+    "heaven": File (
+        path: "sounds/heaven.ogg"
+    ),
+    "hit": File (
+        path: "sounds/hit.ogg"
+    ),
+    "score": File (
+        path: "sounds/score.ogg"
+    ),
+    "swoosh": File (
+        path: "sounds/swoosh.ogg"
+    ),
+    "wing": File (
+        path: "sounds/wing.ogg"
+    ),
+})
+

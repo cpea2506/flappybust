@@ -1,43 +1,44 @@
 automod::dir!("src/game");
 
-mod collision;
-use collision::CollisionPlugin;
-
 pub mod audio;
-use audio::{components::AmbientMusic, events::AudioEvent, resources::AudioAssets, AudioPlugin};
-
 mod background;
-use background::BackgroundPlugin;
-
 mod base;
-use base::BasePlugin;
-
-use date_time::DateTime;
-
 mod bird;
-use bird::BirdPlugin;
-
+mod collision;
 pub mod game_over;
-use game_over::GameOverPlugin;
-
 pub mod pipe;
-use pipe::PipePlugin;
-
-mod score;
-use score::ScorePlugin;
-
 mod ready_message;
-use ready_message::ReadyMessagePlugin;
-
-use bevy::prelude::*;
+mod score;
 
 use crate::GameState;
+use audio::{components::AmbientMusic, events::AudioEvent, AudioPlugin};
+use background::BackgroundPlugin;
+use base::BasePlugin;
+use bevy::prelude::*;
+use bevy_asset_loader::prelude::*;
+use bird::BirdPlugin;
+use collision::CollisionPlugin;
+use game_over::GameOverPlugin;
+use pipe::PipePlugin;
+use ready_message::ReadyMessagePlugin;
+pub use resources::*;
+use score::ScorePlugin;
 
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DateTime>()
+            .add_loading_state(
+                LoadingState::new(GameState::AssetLoading)
+                    .continue_to_state(GameState::Ready)
+                    .with_dynamic_assets_file::<StandardDynamicAssetCollection>("audios.assets.ron")
+                    .with_dynamic_assets_file::<StandardDynamicAssetCollection>("images.assets.ron")
+                    .with_dynamic_assets_file::<StandardDynamicAssetCollection>("fonts.assets.ron")
+                    .load_collection::<ImageAssets>()
+                    .load_collection::<FontAssets>()
+                    .load_collection::<AudioAssets>(),
+            )
             .add_plugins((
                 AudioPlugin,
                 ReadyMessagePlugin,
@@ -49,9 +50,9 @@ impl Plugin for GamePlugin {
                 ScorePlugin,
                 GameOverPlugin,
             ))
-            .add_systems(OnExit(GameState::Over), (init_datetime, stop_all_songs))
             .add_systems(OnEnter(GameState::Playing), play_ambient_music)
-            .add_systems(OnExit(GameState::Playing), stop_ambient_music);
+            .add_systems(OnExit(GameState::Playing), stop_ambient_music)
+            .add_systems(OnExit(GameState::Over), (init_datetime, stop_all_songs));
     }
 }
 

@@ -1,10 +1,10 @@
+use crate::{
+    game::{DateTime, ImageAssets},
+    SCREEN_WIDTH,
+};
 use bevy::prelude::*;
 use flappybust::{ternary, BasicMath};
 use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
-
-use crate::{game::date_time::DateTime, SCREEN_WIDTH};
-
-use super::resources::PipeAssets;
 
 #[derive(Component, Default)]
 pub struct Pipe {
@@ -50,12 +50,12 @@ impl Pipe {
         num_pipe: u32,
         first_time: bool,
         commands: &mut Commands,
-        pipe_assets: &Res<PipeAssets>,
+        image_assets: &Res<ImageAssets>,
         datetime: &Res<DateTime>,
     ) {
         let texture = match **datetime {
-            DateTime::Day => pipe_assets.green.clone(),
-            DateTime::Night => pipe_assets.red.clone(),
+            DateTime::Day => image_assets.green_pipe.clone(),
+            DateTime::Night => image_assets.red_pipe.clone(),
         };
 
         let mut rng = thread_rng();

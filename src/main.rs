@@ -12,6 +12,7 @@ const SCREEN_HEIGHT: f32 = 512f32;
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, States)]
 pub enum GameState {
     #[default]
+    AssetLoading,
     Ready,
     Playing,
     Over,

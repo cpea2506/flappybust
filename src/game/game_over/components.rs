@@ -1,8 +1,6 @@
 use bevy::prelude::Component;
-use strum::AsRefStr;
 
-#[derive(AsRefStr, Clone, Copy)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Clone, Copy)]
 pub enum MedalType {
     Bronze,
     Silver,

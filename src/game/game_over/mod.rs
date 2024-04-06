@@ -1,9 +1,10 @@
 automod::dir!(pub "src/game/game_over");
 
 use super::{
-    audio::{events::AudioEvent, resources::AudioAssets},
+    audio::events::AudioEvent,
     bird::events::{DeathEvent, InTheHeaven},
     score::components::Score,
+    AudioAssets, ImageAssets,
 };
 use crate::GameState;
 use bevy::prelude::*;
@@ -11,6 +12,7 @@ use components::*;
 use events::*;
 use flappybust::{despawn, Switcher};
 
+/// Game over logic.
 pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
@@ -127,7 +129,7 @@ fn move_scoreboard_up(
     }
 }
 
-fn spawn_medal(mut commands: Commands, score: Res<Score>, asset_server: Res<AssetServer>) {
+fn spawn_medal(mut commands: Commands, score: Res<Score>, image_assets: Res<ImageAssets>) {
     let mut medal_name = None;
 
     if score.current >= 10 && score.current < 20 {
@@ -149,7 +151,12 @@ fn spawn_medal(mut commands: Commands, score: Res<Score>, asset_server: Res<Asse
             },
             visibility: Visibility::Hidden,
             texture: match medal_name {
-                Some(name) => asset_server.load(format!("images/medal_{}.png", name.as_ref())),
+                Some(name) => match name {
+                    MedalType::Bronze => image_assets.bronze_medal.clone(),
+                    MedalType::Silver => image_assets.silver_medal.clone(),
+                    MedalType::Gold => image_assets.gold_medal.clone(),
+                    MedalType::Platinum => image_assets.platinum_medal.clone(),
+                },
                 None => Handle::Weak(AssetId::default()),
             },
             ..default()

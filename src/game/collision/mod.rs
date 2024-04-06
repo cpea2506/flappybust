@@ -1,22 +1,22 @@
 automod::dir!("src/game/collision");
 
+use super::{
+    audio::events::AudioEvent,
+    base::components::Base,
+    bird::{components::Bird, events::DeathEvent},
+    pipe::components::Pipe,
+    AudioAssets,
+};
 use crate::GameState;
 use bevy::{
     math::bounding::{Aabb2d, IntersectsVolume},
     prelude::*,
 };
+use events::CollisionEvent;
 use flappybust::BasicMath;
 use itertools::Itertools;
 
-use events::CollisionEvent;
-
-use super::{
-    audio::{events::AudioEvent, resources::AudioAssets},
-    base::components::Base,
-    bird::{components::Bird, events::DeathEvent},
-    pipe::components::Pipe,
-};
-
+/// Collision logic.
 pub struct CollisionPlugin;
 
 impl Plugin for CollisionPlugin {
@@ -24,7 +24,9 @@ impl Plugin for CollisionPlugin {
         app.add_event::<CollisionEvent>().add_systems(
             Update,
             (
-                check_collision.run_if(not(in_state(GameState::Ready))),
+                check_collision
+                    .run_if(not(in_state(GameState::Ready)))
+                    .run_if(not(in_state(GameState::AssetLoading))),
                 on_collision.run_if(in_state(GameState::Playing)),
             ),
         );

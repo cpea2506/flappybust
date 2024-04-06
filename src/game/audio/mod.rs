@@ -1,19 +1,15 @@
 automod::dir!(pub "src/game/audio");
 
 use bevy::{audio::Volume, prelude::*};
-use bevy_asset_loader::prelude::AssetCollectionApp;
-
 use components::AmbientMusic;
-
 use events::AudioEvent;
-use resources::AudioAssets;
 
+/// Audio logic.
 pub struct AudioPlugin;
 
 impl Plugin for AudioPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<AudioEvent>()
-            .init_collection::<AudioAssets>()
             .add_systems(Update, play_audio);
     }
 }
