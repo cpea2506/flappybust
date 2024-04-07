@@ -37,9 +37,13 @@ impl FlapAnimation {
     }
 }
 
+#[derive(Component, Default)]
+pub(super) struct BouncingAnimation {
+    pub velocity: f32,
+}
+
 #[derive(Component, Clone, Copy)]
 pub struct Bird {
-    pub size: Vec2,
     pub translation: Vec3,
     pub velocity: f32,
     pub gravity: f32,
@@ -55,7 +59,6 @@ impl Bird {
         Bird {
             translation: Vec3::new(x, y, 0.3),
             velocity: Self::DEFAULT_VELOCITY,
-            size: Vec2::new(Self::WIDTH, Self::HEIGHT),
             gravity: 0.098,
             rotation: 25f32.to_radians(),
         }

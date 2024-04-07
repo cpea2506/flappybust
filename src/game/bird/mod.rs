@@ -9,15 +9,13 @@ use components::*;
 use events::*;
 use flappybust::{despawn, BasicMath, Switcher};
 use rand::random;
-use resources::BouncingState;
 
 /// Bird logic.
 pub struct BirdPlugin;
 
 impl Plugin for BirdPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<BouncingState>()
-            .add_event::<DeathEvent>()
+        app.add_event::<DeathEvent>()
             .add_systems(OnEnter(GameState::Ready), spawn)
             .add_systems(
                 Update,
@@ -56,7 +54,8 @@ fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>) {
             transform: Transform::from_translation(bird.translation),
             ..default()
         },
-        FlapAnimation::new(0.15, animation_frames),
+        FlapAnimation::new(0.12, animation_frames),
+        BouncingAnimation::default(),
     ));
 }
 
@@ -70,7 +69,7 @@ fn bird_soul_spawn(
     let base = base.iter().next().expect("Base must be initialized first.");
     let translation = Vec3::new(
         bird.translation.x,
-        base.collider_pos + bird.size.y.half(),
+        base.collider_pos + Bird::HEIGHT.half(),
         0.5,
     );
 
@@ -163,29 +162,9 @@ fn flap(time: Res<Time>, mut bird: Query<(&mut FlapAnimation, &mut Handle<Image>
     }
 }
 
-fn bounce_vertical(
-    mut commands: Commands,
-    mut bird: Query<(&mut Transform, &Bird)>,
-    bouncing_state: Res<BouncingState>,
-) {
-    let (mut bird_transform, bird) = bird.single_mut();
+fn bounce_vertical(mut bird: Query<(&mut Transform, &mut BouncingAnimation), With<Bird>>) {
+    let (mut transform, mut bouncing_animation) = bird.single_mut();
 
-    let bouncing_radius = 3f32;
-
-    let distance = bird_transform.translation.y - bird.translation.y;
-
-    if distance >= bouncing_radius {
-        commands.insert_resource(BouncingState::Down);
-    } else if distance <= -bouncing_radius {
-        commands.insert_resource(BouncingState::Up);
-    }
-
-    match bouncing_state.into_inner() {
-        BouncingState::Up => {
-            bird_transform.translation.y += 0.5;
-        }
-        BouncingState::Down => {
-            bird_transform.translation.y -= 0.5;
-        }
-    }
+    transform.translation.y += bouncing_animation.velocity.sin();
+    bouncing_animation.velocity += 0.16;
 }

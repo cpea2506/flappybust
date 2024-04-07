@@ -34,14 +34,14 @@ impl Plugin for CollisionPlugin {
 }
 
 fn check_collision(
-    mut bird: Query<(&mut Transform, &Bird)>,
+    mut bird: Query<&mut Transform, With<Bird>>,
     pipes: Query<(&Transform, &Pipe), Without<Bird>>,
     bases: Query<&Base, (Without<Pipe>, Without<Bird>)>,
     game_state: Res<State<GameState>>,
     mut collision_event: EventWriter<CollisionEvent>,
     mut death_event: EventWriter<DeathEvent>,
 ) {
-    let (mut bird_transform, bird) = bird.single_mut();
+    let mut bird_transform = bird.single_mut();
 
     // There are two bases (for animating purpose) but we only need to take one
     // because bird only collides with the top of any base.
@@ -50,10 +50,10 @@ fn check_collision(
         .next()
         .expect("Base must be initialized first.");
 
-    // check if bird bottom collides with top base
-    if bird_transform.translation.y - bird.size.y.half() <= base.collider_pos {
+    // Check if bird bottom collides with top base.
+    if bird_transform.translation.y - Bird::HEIGHT.half() <= base.collider_pos {
         // this is for bird to lay on the ground
-        bird_transform.translation.y = base.collider_pos + bird.size.y.half();
+        bird_transform.translation.y = base.collider_pos + Bird::HEIGHT.half();
 
         death_event.send_default();
         collision_event.send_default();
@@ -63,8 +63,10 @@ fn check_collision(
     // to prevent each frame checking when bird falls inside a pipe.
     if matches!(game_state.get(), GameState::Playing) {
         let bird_collide = |b_pos: Vec3, b_size: Vec2| {
-            let bird_bounding_box =
-                Aabb2d::new(bird_transform.translation.truncate(), bird.size.half());
+            let bird_bounding_box = Aabb2d::new(
+                bird_transform.translation.truncate(),
+                Vec2::new(Bird::WIDTH, Bird::HEIGHT).half(),
+            );
             let other_bounding_box = Aabb2d::new(b_pos.truncate(), b_size.half());
 
             bird_bounding_box.intersects(&other_bounding_box)
