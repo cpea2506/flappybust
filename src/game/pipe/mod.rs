@@ -12,9 +12,9 @@ pub struct PipePlugin;
 
 impl Plugin for PipePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Ready), despawn::<Pipe>)
-            .add_systems(OnEnter(GameState::Playing), spawn)
-            .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
+        app.add_systems(OnEnter(GameState::Playing), spawn)
+            .add_systems(Update, moving.run_if(in_state(GameState::Playing)))
+            .add_systems(OnExit(GameState::Over), despawn::<Pipe>);
     }
 }
 fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>, datetime: Res<DateTime>) {

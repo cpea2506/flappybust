@@ -15,8 +15,6 @@ pub struct ScorePlugin;
 impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Score>()
-            .add_systems(OnEnter(GameState::Ready), despawn::<ScoreboardScore>)
-            .add_systems(OnEnter(GameState::Over), despawn::<CurrentScore>)
             .add_systems(OnEnter(GameState::Playing), spawn_current_score)
             .add_systems(
                 Update,
@@ -24,7 +22,9 @@ impl Plugin for ScorePlugin {
                     (record, display_current_score).run_if(in_state(GameState::Playing)),
                     display_scoreboard_score.run_if(in_state(GameState::Over)),
                 ),
-            );
+            )
+            .add_systems(OnEnter(GameState::Over), despawn::<CurrentScore>)
+            .add_systems(OnExit(GameState::Over), despawn::<ScoreboardScore>);
     }
 }
 

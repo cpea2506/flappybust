@@ -22,15 +22,6 @@ impl Plugin for GameOverPlugin {
             .add_event::<InTheHeaven>()
             .add_event::<RestartButtonDisplayed>()
             .add_event::<GameOverTextDisplayed>()
-            .add_systems(
-                OnEnter(GameState::Ready),
-                (
-                    despawn::<Medal>,
-                    despawn::<GameOverText>,
-                    despawn::<Scoreboard>,
-                    despawn::<RestartButton>,
-                ),
-            )
             .add_systems(OnEnter(GameState::Over), (spawn_game_over, spawn_medal))
             .add_systems(
                 Update,
@@ -41,6 +32,15 @@ impl Plugin for GameOverPlugin {
                     display_restart_btn,
                 )
                     .run_if(in_state(GameState::Over)),
+            )
+            .add_systems(
+                OnExit(GameState::Over),
+                (
+                    despawn::<Medal>,
+                    despawn::<GameOverText>,
+                    despawn::<Scoreboard>,
+                    despawn::<RestartButton>,
+                ),
             );
     }
 }
