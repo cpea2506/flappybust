@@ -11,6 +11,8 @@
     <link rel="canonical" href="https://cpea2506.github.io/flappybust/" />
     <style >body {
   display: flex;
+  min-height: 100dvh;
+  margin: 0;
   background-color: #282c34;
 }
 
@@ -24,13 +26,13 @@ canvas {
     
     <link rel="icon" href="/flappybust/icon-489a659fd8b5bcb7.png" integrity="sha384-wFpaNI6oArCYmP9K45tu6Wtom8NTkN2/mzFJryn34YHPTK+FiT86n0uxQ9FmaxYW"/>
     <base href="/flappybust/" />
-<link rel="modulepreload" href="/flappybust/flappybust-64b3107642fcc9ab.js" crossorigin="anonymous" integrity="sha384-ToI+6l5JICVdTyw1Pr3TiG8skPWElCu3MK3faPXzUOv3L+fbq+Mk8pDmOqcjWltA"><link rel="preload" href="/flappybust/flappybust-48324ff1da73052_bg.wasm" crossorigin="anonymous" integrity="sha384-zi1yYwoc5ZNd8NARAqXEHCRkAR7FNTXIr4dydJPcLHEuRhyIkjgHXmB61L/PIOsc" as="fetch" type="application/wasm"></head>
+<link rel="modulepreload" href="/flappybust/flappybust-64b3107642fcc9ab.js" crossorigin="anonymous" integrity="sha384-ToI+6l5JICVdTyw1Pr3TiG8skPWElCu3MK3faPXzUOv3L+fbq+Mk8pDmOqcjWltA"><link rel="preload" href="/flappybust/flappybust-6183ee372dca77ce_bg.wasm" crossorigin="anonymous" integrity="sha384-gXtJ6rdRTW1wyazI79014M9p7Uo5oCiPvKIMEx+E5he1maRDU02OsK8CuwwnxhZi" as="fetch" type="application/wasm"></head>
 
 <body>
     
 <script type="module">
 import init, * as bindings from '/flappybust/flappybust-64b3107642fcc9ab.js';
-const wasm = await init({ module_or_path: '/flappybust/flappybust-48324ff1da73052_bg.wasm' });
+const wasm = await init({ module_or_path: '/flappybust/flappybust-6183ee372dca77ce_bg.wasm' });
 
 
 window.wasmBindings = bindings;
