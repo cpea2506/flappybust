@@ -1,43 +1,30 @@
 automod::dir!(pub "src/game/base");
 
-use super::ImageAssets;
+use super::{ImageAssets, layer};
 use crate::{GAME_SPEED, GameState, SCREEN_HEIGHT};
 use bevy::prelude::*;
 use components::Base;
-use flappybust::frames;
+use flappybust::Scroll;
 
 pub struct BasePlugin;
 
 impl Plugin for BasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Ready), spawn)
-            .add_systems(Update, moving.run_if(not(in_state(GameState::Over))));
+        app.add_systems(OnExit(GameState::AssetLoading), spawn);
     }
 }
 
-fn spawn(mut commands: Commands, base: Query<(), With<Base>>, image_assets: Res<ImageAssets>) {
-    if !base.is_empty() {
-        return;
-    }
+fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>) {
+    let y = (Base::HEIGHT - SCREEN_HEIGHT) / 2.0;
 
-    let base = Base::new(0f32, (Base::HEIGHT - SCREEN_HEIGHT) / 2.0, false);
-    let secondary_base = Base::new(Base::WIDTH, base.translation.y, true);
-    let texture = image_assets.base.clone();
-
-    commands.spawn_batch(vec![
-        base.generate_bundle(&texture),
-        secondary_base.generate_bundle(&texture),
-    ]);
-}
-
-fn moving(time: Res<Time>, mut base: Query<(&mut Base, &mut Transform)>) {
-    for (mut base, mut transform) in &mut base {
-        base.translation.x = (base.translation.x - GAME_SPEED * frames(&time)) % Base::RESET_POINT;
-
-        if base.secondary {
-            transform.translation.x = base.translation.x + Base::RESET_POINT;
-        } else {
-            transform.translation.x = base.translation.x;
-        }
+    for x in [0f32, Base::PERIOD] {
+        commands.spawn((
+            Sprite::from_image(image_assets.base.clone()),
+            Transform::from_xyz(x, y, layer::BASE),
+            Scroll {
+                speed: GAME_SPEED,
+                period: Base::PERIOD,
+            },
+        ));
     }
 }

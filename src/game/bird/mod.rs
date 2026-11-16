@@ -1,18 +1,13 @@
 automod::dir!(pub "src/game/bird");
 
-use super::{
-    AudioAssets, GameState, ImageAssets, audio::messages::AudioMessage, base::components::Base,
-    layer, pipe::components::Pipe,
-};
-use crate::{GameOverPhase, InRound};
+use super::{AudioAssets, GameState, ImageAssets, layer, pipe::components::Pipe};
+use crate::GameOverPhase;
 use bevy::{
     prelude::*,
     shape::{Aabb2d, IntersectsVolume},
-    transform::TransformSystems,
 };
 use components::*;
-use flappybust::{despawn, frames};
-use messages::*;
+use flappybust::{frames, sound};
 use rand::random_range;
 
 /// Bird logic.
@@ -20,29 +15,22 @@ pub struct BirdPlugin;
 
 impl Plugin for BirdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<DeathMessage>()
-            .add_systems(OnEnter(GameState::Ready), spawn)
+        // Systems that need the bird skip themselves while it doesn't exist (e.g. while loading).
+        app.add_systems(OnEnter(GameState::Ready), spawn)
             .add_systems(
                 Update,
                 (
                     bounce_vertical.run_if(in_state(GameState::Ready)),
-                    fall.run_if(in_state(InRound)),
-                    flap.run_if(in_state(GameState::Ready).or_else(in_state(GameState::Playing))),
+                    fall.run_if(not(in_state(GameState::Ready))),
+                    flap.run_if(not(in_state(GameState::Over))),
                     // Flap before falling so a press moves the bird up this frame, not the next.
                     fly.run_if(in_state(GameState::Playing)).before(fall),
                     bird_soul_fly.run_if(in_state(GameOverPhase::Soul)),
                 ),
             )
-            // After all `Update` movement so it uses this frame's positions,
-            // but before transforms propagate so landing on the base renders this frame.
-            .add_systems(
-                PostUpdate,
-                collide
-                    .run_if(in_state(InRound))
-                    .before(TransformSystems::Propagate),
-            )
-            .add_systems(OnEnter(GameOverPhase::Soul), bird_soul_spawn)
-            .add_systems(OnExit(GameState::Over), despawn::<Bird>);
+            // After all `Update` movement so it uses this frame's positions.
+            .add_systems(PostUpdate, collide.run_if(in_state(GameState::Playing)))
+            .add_systems(OnEnter(GameOverPhase::Soul), bird_soul_spawn);
     }
 }
 
@@ -53,37 +41,29 @@ fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>) {
         &image_assets.yellow_birds,
     ];
     let animation_frames = birds[random_range(0..birds.len())].clone();
-    let bird = Bird::default();
 
     commands.spawn((
-        bird,
+        Bird::default(),
         Sprite::from_image(animation_frames[0].clone()),
-        Transform::from_translation(bird.translation),
+        Transform::from_translation(Bird::START.extend(layer::BIRD)),
         FlapAnimation::new(Bird::FLAP_FRAME_SECS, animation_frames),
         BouncingAnimation::default(),
+        DespawnOnExit(GameState::Over),
     ));
 }
 
 fn bird_soul_spawn(
     mut commands: Commands,
-    bird: Single<&Bird>,
     image_assets: Res<ImageAssets>,
     audio_assets: Res<AudioAssets>,
-    mut audio_message: MessageWriter<AudioMessage>,
 ) {
-    let translation = Vec3::new(
-        bird.translation.x,
-        Base::TOP + Bird::HEIGHT / 2.0,
-        layer::BIRD_SOUL,
-    );
-
     commands.spawn((
         Sprite::from_image(image_assets.bird_soul.clone()),
-        Transform::from_translation(translation),
+        Transform::from_xyz(Bird::START.x, Bird::GROUND_Y, layer::BIRD_SOUL),
         BirdSoul,
         DespawnOnExit(GameState::Over),
     ));
-    audio_message.write(AudioMessage::new(&audio_assets.heaven, false));
+    commands.spawn(sound(&audio_assets.heaven));
 }
 
 fn bird_soul_fly(
@@ -98,42 +78,38 @@ fn bird_soul_fly(
     }
 }
 
-fn fall(
-    time: Res<Time>,
-    bird: Single<(&mut Bird, &mut Transform)>,
-    death_message: MessageReader<DeathMessage>,
-) {
-    let (mut bird, mut bird_transform) = bird.into_inner();
+fn fall(time: Res<Time>, bird: Single<(&mut Bird, &mut Transform)>) {
+    let (mut bird, mut transform) = bird.into_inner();
+
+    // A dead bird just lies on the base.
+    if transform.translation.y <= Bird::GROUND_Y {
+        return;
+    }
+
     let frames = frames(&time);
 
     bird.rotation = (bird.rotation - Bird::ROTATION_SPEED * frames)
         .clamp(Bird::MIN_ROTATION, Bird::MAX_ROTATION);
+    bird.velocity = (bird.velocity + Bird::GRAVITY * frames).min(Bird::MAX_VELOCITY);
 
-    // Don't try to fall if bird has been already dead,
-    // just lay on the ground.
-    if !death_message.is_empty() {
-        return;
-    }
-
-    bird.velocity = (bird.velocity + bird.gravity * frames).min(Bird::MAX_VELOCITY);
-
-    bird_transform.translation.y -= bird.velocity * frames;
-    bird_transform.rotation = Quat::from_rotation_z(bird.rotation);
+    transform.translation.y =
+        (transform.translation.y - bird.velocity * frames).max(Bird::GROUND_Y);
+    transform.rotation = Quat::from_rotation_z(bird.rotation);
 }
 
 fn fly(
+    mut commands: Commands,
     mut bird: Single<&mut Bird>,
     keys: Res<ButtonInput<KeyCode>>,
     buttons: Res<ButtonInput<MouseButton>>,
     touches: Res<Touches>,
     audio_assets: Res<AudioAssets>,
-    mut audio_message: MessageWriter<AudioMessage>,
 ) {
     if keys.just_pressed(KeyCode::Space)
         || buttons.just_pressed(MouseButton::Left)
         || touches.any_just_pressed()
     {
-        audio_message.write(AudioMessage::new(&audio_assets.wing, false));
+        commands.spawn(sound(&audio_assets.wing));
 
         bird.velocity = Bird::DEFAULT_VELOCITY;
         bird.rotation = Bird::MAX_ROTATION;
@@ -143,7 +119,7 @@ fn fly(
         || buttons.just_released(MouseButton::Left)
         || touches.any_just_released()
     {
-        audio_message.write(AudioMessage::new(&audio_assets.swoosh, false));
+        commands.spawn(sound(&audio_assets.swoosh));
     }
 }
 
@@ -158,38 +134,27 @@ fn flap(time: Res<Time>, bird: Single<(&mut FlapAnimation, &mut Sprite), With<Bi
     }
 }
 
-fn bounce_vertical(time: Res<Time>, bird: Single<(&mut Transform, &mut BouncingAnimation, &Bird)>) {
-    let (mut transform, mut bouncing_animation, bird) = bird.into_inner();
+fn bounce_vertical(
+    time: Res<Time>,
+    bird: Single<(&mut Transform, &mut BouncingAnimation), With<Bird>>,
+) {
+    let (mut transform, mut bouncing_animation) = bird.into_inner();
 
     bouncing_animation.phase += BouncingAnimation::SPEED * frames(&time);
 
     // Set the position from the phase instead of accumulating steps, so it never drifts.
     transform.translation.y =
-        bird.translation.y + (1f32 - bouncing_animation.phase.cos()) / BouncingAnimation::SPEED;
+        Bird::START.y + (1f32 - bouncing_animation.phase.cos()) / BouncingAnimation::SPEED;
 }
 
-/// End the game when the bird hits a pipe or the base, and keep a dead bird lying on the base.
+/// End the game when the bird hits a pipe or lands on the base.
 fn collide(
-    mut bird: Single<&mut Transform, With<Bird>>,
+    mut commands: Commands,
+    bird: Single<&Transform, With<Bird>>,
     pipes: Query<&Transform, (With<Pipe>, Without<Bird>)>,
-    state: Res<State<GameState>>,
     mut next_state: ResMut<NextState<GameState>>,
     audio_assets: Res<AudioAssets>,
-    mut audio_message: MessageWriter<AudioMessage>,
-    mut death_message: MessageWriter<DeathMessage>,
 ) {
-    let on_base = bird.translation.y - Bird::HEIGHT / 2.0 <= Base::TOP;
-
-    if on_base {
-        bird.translation.y = Base::TOP + Bird::HEIGHT / 2.0;
-        death_message.write_default();
-    }
-
-    // Only while playing, so a bird falling through a pipe after dying doesn't hit it again.
-    if *state.get() != GameState::Playing {
-        return;
-    }
-
     let bird_box = Aabb2d::new(
         bird.translation.truncate(),
         Vec2::new(Bird::WIDTH, Bird::HEIGHT) / 2.0,
@@ -199,11 +164,9 @@ fn collide(
         .iter()
         .any(|pipe| bird_box.intersects(&Aabb2d::new(pipe.translation.truncate(), pipe_half_size)));
 
-    if on_base || hit_pipe {
-        audio_message.write_batch([
-            AudioMessage::new(&audio_assets.die, false),
-            AudioMessage::new(&audio_assets.hit, false),
-        ]);
+    if bird.translation.y <= Bird::GROUND_Y || hit_pipe {
+        commands.spawn(sound(&audio_assets.die));
+        commands.spawn(sound(&audio_assets.hit));
         next_state.set(GameState::Over);
     }
 }

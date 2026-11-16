@@ -1,4 +1,4 @@
-use super::super::layer;
+use super::super::base::components::Base;
 use bevy::prelude::*;
 
 type AnimationFrames = Vec<Handle<Image>>;
@@ -30,11 +30,9 @@ impl BouncingAnimation {
     pub const SPEED: f32 = 0.16;
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component)]
 pub struct Bird {
-    pub translation: Vec3,
     pub velocity: f32,
-    pub gravity: f32,
     pub rotation: f32,
 }
 
@@ -44,9 +42,11 @@ impl Bird {
     // Original Flappy Bird physics (as recreated by FlapPyBird at 30 FPS), in 60 FPS frames.
     pub const DEFAULT_VELOCITY: f32 = -4.5;
     pub const MAX_VELOCITY: f32 = 5.0;
-    const GRAVITY: f32 = 0.25;
+    pub const GRAVITY: f32 = 0.25;
 
     pub const START: Vec2 = Vec2::new(-53f32, 9f32);
+    /// Height of a bird lying on the base, dead.
+    pub const GROUND_Y: f32 = Base::TOP + Self::HEIGHT / 2.0;
     pub const FLAP_FRAME_SECS: f32 = 0.12;
     /// Nose-up angle after a flap, and the highest it can point.
     pub const MAX_ROTATION: f32 = 25f32.to_radians();
@@ -59,9 +59,7 @@ impl Bird {
 impl Default for Bird {
     fn default() -> Self {
         Bird {
-            translation: Self::START.extend(layer::BIRD),
             velocity: Self::DEFAULT_VELOCITY,
-            gravity: Self::GRAVITY,
             rotation: Self::MAX_ROTATION,
         }
     }

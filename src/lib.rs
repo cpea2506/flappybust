@@ -10,9 +10,26 @@ pub fn frames(time: &Time) -> f32 {
     time.delta_secs() * BASE_FPS
 }
 
-/// Despawn entity that has specified components in the world.
-pub fn despawn<T: Component>(mut commands: Commands, entities: Query<Entity, With<T>>) {
-    for entity in &entities {
-        commands.entity(entity).despawn();
+/// A one-shot sound that despawns once finished.
+pub fn sound(source: &Handle<AudioSource>) -> impl Bundle {
+    (AudioPlayer::new(source.clone()), PlaybackSettings::DESPAWN)
+}
+
+/// Endless horizontal scrolling for a pair of tiles placed `period` apart.
+#[derive(Component)]
+pub struct Scroll {
+    /// Pixels per 60 FPS frame.
+    pub speed: f32,
+    pub period: f32,
+}
+
+/// Move scrolling tiles left, jumping each one back behind the other once it leaves.
+pub fn scroll(time: Res<Time>, mut tiles: Query<(&Scroll, &mut Transform)>) {
+    for (scroll, mut transform) in &mut tiles {
+        transform.translation.x -= scroll.speed * frames(&time);
+
+        if transform.translation.x <= -scroll.period {
+            transform.translation.x += 2.0 * scroll.period;
+        }
     }
 }

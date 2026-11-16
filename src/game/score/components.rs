@@ -1,6 +1,6 @@
-use bevy::{ecs::component::Component, prelude::Resource};
+use bevy::prelude::*;
 
-#[derive(Resource, Copy, Clone, Default)]
+#[derive(Resource, Default)]
 pub struct Score {
     pub current: usize,
     pub highest: usize,
@@ -8,6 +8,3 @@ pub struct Score {
 
 #[derive(Component)]
 pub(super) struct CurrentScore;
-
-#[derive(Component)]
-pub(super) struct ScoreboardScore;

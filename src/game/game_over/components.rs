@@ -19,50 +19,30 @@ impl RestartButton {
     pub const Y: f32 = -35f32;
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Scoreboard {
     pub velocity: f32,
-    pub gravity: f32,
 }
 
 impl Scoreboard {
     /// Off screen, below the base.
     pub const START_Y: f32 = -199f32;
     pub const END_Y: f32 = 57f32;
+    pub const GRAVITY: f32 = 0.15;
 }
 
-impl Default for Scoreboard {
-    fn default() -> Self {
-        Scoreboard {
-            gravity: 0.15,
-            velocity: 0f32,
-        }
-    }
-}
-
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct GameOverText {
     pub velocity: f32,
-    pub gravity: f32,
-
-    /// Whether text should be bounced or not (default: true).
-    pub bounce: bool,
+    /// Whether the text already bounced off its rest position (it bounces once).
+    pub bounced: bool,
 }
 
 impl GameOverText {
     /// Off screen, above the top.
     pub const START_Y: f32 = 351f32;
     pub const REST_Y: f32 = 156f32;
+    pub const GRAVITY: f32 = 0.6;
     /// Share of speed kept after bouncing off the rest position.
     pub const BOUNCINESS: f32 = 0.73;
-}
-
-impl Default for GameOverText {
-    fn default() -> Self {
-        GameOverText {
-            gravity: 0.6,
-            velocity: 0f32,
-            bounce: true,
-        }
-    }
 }

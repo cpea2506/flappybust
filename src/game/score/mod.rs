@@ -1,13 +1,12 @@
 automod::dir!(pub "src/game/score");
 
-use super::layer;
 use super::{
-    AudioAssets, FontAssets, GameState, audio::messages::AudioMessage, bird::components::Bird,
-    pipe::components::Pipe,
+    AudioAssets, FontAssets, GameState, bird::components::Bird, layer, pipe::components::Pipe,
 };
 use crate::{GameOverPhase, SCREEN_HEIGHT};
 use bevy::{camera::visibility::NoFrustumCulling, prelude::*, sprite::Anchor};
 use components::*;
+use flappybust::sound;
 
 /// Bevy 0.15 text renders 1.2x larger, so font sizes are scaled down to keep the old size.
 const TEXT_SCALE: f32 = 1.2;
@@ -24,32 +23,25 @@ impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Score>()
             .add_systems(OnEnter(GameState::Playing), spawn_current_score)
-            .add_systems(
-                Update,
-                (record, display_current_score).run_if(in_state(GameState::Playing)),
-            )
-            .add_systems(OnEnter(GameOverPhase::Medal), display_scoreboard_score);
+            .add_systems(Update, record.run_if(in_state(GameState::Playing)))
+            .add_systems(OnEnter(GameOverPhase::Medal), spawn_scoreboard_score);
     }
 }
 
 fn spawn_current_score(
     mut commands: Commands,
     font_assets: Res<FontAssets>,
-    prev_score: Res<Score>,
+    mut score: ResMut<Score>,
 ) {
-    let score = Score {
-        current: 0,
-        ..*prev_score
-    };
+    score.current = 0;
 
     commands.spawn((
-        Text2d::new(score.current.to_string()),
+        Text2d::new("0"),
         TextFont {
             font: font_assets.teko_bold.clone().into(),
             font_size: FontSize::Px(CURRENT_SCORE_FONT_SIZE),
             ..default()
         },
-        TextLayout::justify(Justify::Center),
         Anchor::TOP_CENTER,
         Transform::from_xyz(0f32, SCREEN_HEIGHT / 2.0, layer::HUD),
         // Frustum culling wrongly hides text whose top sits on the screen edge,
@@ -58,22 +50,9 @@ fn spawn_current_score(
         CurrentScore,
         DespawnOnExit(GameState::Playing),
     ));
-
-    commands.insert_resource(score);
 }
 
-fn display_current_score(
-    score: Res<Score>,
-    mut current_score: Single<&mut Text2d, With<CurrentScore>>,
-) {
-    current_score.0 = score.current.to_string();
-}
-
-fn display_scoreboard_score(
-    mut commands: Commands,
-    score: Res<Score>,
-    font_assets: Res<FontAssets>,
-) {
+fn spawn_scoreboard_score(mut commands: Commands, score: Res<Score>, font_assets: Res<FontAssets>) {
     let text_font = TextFont {
         font: font_assets.teko_bold.clone().into(),
         font_size: FontSize::Px(SCOREBOARD_FONT_SIZE),
@@ -90,30 +69,31 @@ fn display_scoreboard_score(
             text_font.clone(),
             Anchor::CENTER_RIGHT,
             Transform::from_xyz(SCOREBOARD_SCORE_RIGHT, y, layer::SCOREBOARD_SCORE),
-            ScoreboardScore,
             DespawnOnExit(GameState::Over),
         ));
     }
 }
 
+/// Score a point each time the bird passes a pipe pair (counted on the lower pipe).
 fn record(
+    mut commands: Commands,
     audio_assets: Res<AudioAssets>,
-    mut audio_message: MessageWriter<AudioMessage>,
-    bird_transform: Single<&Transform, With<Bird>>,
+    bird: Single<&Transform, With<Bird>>,
     mut pipes: Query<(&mut Pipe, &Transform)>,
     mut score: ResMut<Score>,
+    mut current_score: Single<&mut Text2d, With<CurrentScore>>,
 ) {
     for (mut pipe, pipe_transform) in &mut pipes {
-        // Increase score each time the bird has passed a pipe pair (counted on the lower pipe).
         if !pipe.flip_y
             && !pipe.scored
-            && bird_transform.translation.x + Bird::WIDTH / 2.0 > pipe_transform.translation.x
+            && bird.translation.x + Bird::WIDTH / 2.0 > pipe_transform.translation.x
         {
+            pipe.scored = true;
             score.current += 1;
             score.highest = score.current.max(score.highest);
-            pipe.scored = true;
+            current_score.0 = score.current.to_string();
 
-            audio_message.write(AudioMessage::new(&audio_assets.score, false));
+            commands.spawn(sound(&audio_assets.score));
         }
     }
 }

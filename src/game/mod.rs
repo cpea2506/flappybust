@@ -1,25 +1,21 @@
 automod::dir!("src/game");
 
-mod audio;
 mod background;
 mod base;
 mod bird;
 mod game_over;
 mod pipe;
-mod ready_message;
 mod score;
 
 use crate::GameState;
-use audio::{AudioPlugin, components::AmbientMusic, messages::AudioMessage};
 use background::BackgroundPlugin;
 use base::BasePlugin;
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 use bevy_asset_loader::prelude::*;
 use bird::BirdPlugin;
-use flappybust::despawn;
+use flappybust::scroll;
 use game_over::GameOverPlugin;
 use pipe::PipePlugin;
-use ready_message::ReadyMessagePlugin;
 pub use resources::*;
 use score::ScorePlugin;
 
@@ -38,6 +34,7 @@ mod layer {
 }
 
 const AMBIENT_VOLUME: f32 = 0.2;
+const READY_MESSAGE_Y: f32 = 73.5;
 
 pub struct GamePlugin;
 
@@ -55,8 +52,6 @@ impl Plugin for GamePlugin {
                     .load_collection::<AudioAssets>(),
             )
             .add_plugins((
-                AudioPlugin,
-                ReadyMessagePlugin,
                 BackgroundPlugin,
                 BasePlugin,
                 BirdPlugin,
@@ -64,9 +59,10 @@ impl Plugin for GamePlugin {
                 ScorePlugin,
                 GameOverPlugin,
             ))
+            .add_systems(OnEnter(GameState::Ready), spawn_ready_message)
             .add_systems(Update, start_game.run_if(in_state(GameState::Ready)))
             .add_systems(OnEnter(GameState::Playing), play_ambient_music)
-            .add_systems(OnExit(GameState::Playing), despawn::<AmbientMusic>)
+            .add_systems(Update, scroll.run_if(not(in_state(GameState::Over))))
             .add_systems(OnExit(GameState::Over), (init_datetime, stop_all_songs));
     }
 }
@@ -81,14 +77,19 @@ fn stop_all_songs(audio_sinks: Query<&AudioSink>) {
     }
 }
 
-fn play_ambient_music(
-    mut audio_message: MessageWriter<AudioMessage>,
-    audio_assets: Res<AudioAssets>,
-) {
-    audio_message.write(AudioMessage::new_with_volume(
-        &audio_assets.theme,
-        true,
-        AMBIENT_VOLUME,
+fn spawn_ready_message(mut commands: Commands, image_assets: Res<ImageAssets>) {
+    commands.spawn((
+        Sprite::from_image(image_assets.ready_message.clone()),
+        Transform::from_xyz(0f32, READY_MESSAGE_Y, layer::READY_MESSAGE),
+        DespawnOnExit(GameState::Ready),
+    ));
+}
+
+fn play_ambient_music(mut commands: Commands, audio_assets: Res<AudioAssets>) {
+    commands.spawn((
+        AudioPlayer::new(audio_assets.theme.clone()),
+        PlaybackSettings::LOOP.with_volume(Volume::Linear(AMBIENT_VOLUME)),
+        DespawnOnExit(GameState::Playing),
     ));
 }
 

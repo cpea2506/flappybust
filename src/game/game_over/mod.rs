@@ -1,14 +1,11 @@
 automod::dir!(pub "src/game/game_over");
 
-use super::{
-    AudioAssets, ImageAssets, audio::messages::AudioMessage, bird::messages::DeathMessage, layer,
-    score::components::Score,
-};
+use super::{AudioAssets, ImageAssets, bird::components::Bird, layer, score::components::Score};
 use crate::{GameOverPhase, GameState};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use components::*;
-use flappybust::frames;
+use flappybust::{frames, sound};
 
 /// Game over logic.
 pub struct GameOverPlugin;
@@ -56,17 +53,16 @@ fn bounce_game_over_text(
 
     let frames = frames(&time);
 
-    game_over_text.velocity += game_over_text.gravity * frames;
+    game_over_text.velocity += GameOverText::GRAVITY * frames;
     transform.translation.y -= game_over_text.velocity * frames;
 
     if transform.translation.y < GameOverText::REST_Y {
-        if game_over_text.bounce {
+        if game_over_text.bounced {
+            transform.translation.y = GameOverText::REST_Y;
+        } else {
             game_over_text.velocity *= -GameOverText::BOUNCINESS;
-            game_over_text.bounce = false;
-            return;
+            game_over_text.bounced = true;
         }
-
-        transform.translation.y = GameOverText::REST_Y;
     }
 }
 
@@ -75,7 +71,7 @@ fn move_scoreboard_up(time: Res<Time>, scoreboard: Single<(&mut Transform, &mut 
 
     let frames = frames(&time);
 
-    scoreboard.velocity += scoreboard.gravity * frames;
+    scoreboard.velocity += Scoreboard::GRAVITY * frames;
 
     transform.translation.y = (transform.translation.y + scoreboard.velocity * frames)
         .clamp(Scoreboard::START_Y, Scoreboard::END_Y);
@@ -85,15 +81,15 @@ fn move_scoreboard_up(time: Res<Time>, scoreboard: Single<(&mut Transform, &mut 
 fn finish_board(
     game_over_text: Single<(&Transform, &GameOverText)>,
     scoreboard: Single<&Transform, With<Scoreboard>>,
-    death_message: MessageReader<DeathMessage>,
+    bird: Single<&Transform, With<Bird>>,
     mut next_phase: ResMut<NextState<GameOverPhase>>,
 ) {
     let (text_transform, game_over_text) = *game_over_text;
 
-    if !game_over_text.bounce
+    if game_over_text.bounced
         && text_transform.translation.y == GameOverText::REST_Y
         && scoreboard.translation.y == Scoreboard::END_Y
-        && !death_message.is_empty()
+        && bird.translation.y == Bird::GROUND_Y
     {
         next_phase.set(GameOverPhase::Medal);
     }
@@ -127,10 +123,10 @@ fn spawn_medal(
 }
 
 fn scale_medal(
+    mut commands: Commands,
     time: Res<Time>,
     audio_assets: Res<AudioAssets>,
     mut medal: Single<&mut Transform, With<Medal>>,
-    mut audio_message: MessageWriter<AudioMessage>,
     mut next_phase: ResMut<NextState<GameOverPhase>>,
 ) {
     // Shrink both xy back to the original size.
@@ -138,7 +134,7 @@ fn scale_medal(
     medal.scale = Vec3::new(scale, scale, 1f32);
 
     if scale == 1f32 {
-        audio_message.write(AudioMessage::new(&audio_assets.ding, false));
+        commands.spawn(sound(&audio_assets.ding));
         next_phase.set(GameOverPhase::Soul);
     }
 }

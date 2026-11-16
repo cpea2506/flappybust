@@ -1,5 +1,5 @@
 use super::super::layer;
-use crate::InRound;
+use crate::GameState;
 use bevy::prelude::*;
 use std::ops::Range;
 use rand::random_range;
@@ -40,7 +40,7 @@ impl Pipe {
                     flip_y,
                     scored: false,
                 },
-                DespawnOnExit(InRound),
+                DespawnOnExit(GameState::Over),
             ));
         }
     }
