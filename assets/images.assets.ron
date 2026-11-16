@@ -17,6 +17,9 @@
     "red_pipe": File (
         path: "images/pipe_red.png",
     ),
+    "coin": File (
+        path: "images/coin.png",
+    ),
     "bg_day": File (
         path: "images/bg_day.png"
     ),
