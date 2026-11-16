@@ -5,7 +5,7 @@ use super::{
     game_over::events::ScoreboardDisplayed, pipe::components::Pipe,
 };
 use crate::SCREEN_HEIGHT;
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{camera::visibility::NoFrustumCulling, prelude::*, sprite::Anchor};
 use components::*;
 use flappybust::despawn;
 
@@ -48,6 +48,9 @@ fn spawn_current_score(
         TextLayout::justify(Justify::Center),
         Anchor::TOP_CENTER,
         Transform::from_xyz(0f32, SCREEN_HEIGHT / 2.0, 0.2),
+        // Frustum culling wrongly hides text whose top sits on the screen edge,
+        // and this text is always on screen anyway.
+        NoFrustumCulling,
         CurrentScore,
     ));
 
