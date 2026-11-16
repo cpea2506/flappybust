@@ -4,7 +4,7 @@ use super::{DateTime, ImageAssets, layer};
 use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use components::Background;
-use flappybust::Scroll;
+use flappybust::{Position, Scroll};
 
 /// Background logic.
 pub struct BackgroundPlugin;
@@ -20,7 +20,7 @@ fn spawn(mut commands: Commands) {
     for x in [0f32, SCREEN_WIDTH] {
         commands.spawn((
             Sprite::default(),
-            Transform::from_xyz(x, 0f32, layer::BACKGROUND),
+            Position(Vec3::new(x, 0f32, layer::BACKGROUND)),
             Scroll {
                 speed: Background::SPEED,
                 period: SCREEN_WIDTH,

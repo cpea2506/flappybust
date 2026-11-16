@@ -26,7 +26,7 @@ pub(super) struct BouncingAnimation {
 }
 
 impl BouncingAnimation {
-    /// Phase step per frame; also sets the bounce height.
+    /// Phase step per fixed step; also sets the bounce height.
     pub const SPEED: f32 = 0.16;
 }
 
@@ -34,12 +34,14 @@ impl BouncingAnimation {
 pub struct Bird {
     pub velocity: f32,
     pub rotation: f32,
+    /// A flap pressed since the last fixed step, which applies it.
+    pub flap_queued: bool,
 }
 
 impl Bird {
     pub const WIDTH: f32 = 34f32;
     pub const HEIGHT: f32 = 24f32;
-    // Original Flappy Bird physics (as recreated by FlapPyBird at 30 FPS), in 60 FPS frames.
+    // Original Flappy Bird physics (as recreated by FlapPyBird at 30 FPS), per 60 FPS fixed step.
     pub const DEFAULT_VELOCITY: f32 = -4.5;
     pub const MAX_VELOCITY: f32 = 5.0;
     pub const GRAVITY: f32 = 0.25;
@@ -55,7 +57,7 @@ impl Bird {
     pub const MAX_ROTATION: f32 = 20f32.to_radians();
     /// Straight down, the lowest it can point.
     pub const MIN_ROTATION: f32 = -90f32.to_radians();
-    /// Radians turned nose-down per frame.
+    /// Radians turned nose-down per fixed step.
     pub const ROTATION_SPEED: f32 = 3f32.to_radians();
 }
 
@@ -64,6 +66,7 @@ impl Default for Bird {
         Bird {
             velocity: Self::DEFAULT_VELOCITY,
             rotation: Self::FLAP_ROTATION,
+            flap_queued: false,
         }
     }
 }

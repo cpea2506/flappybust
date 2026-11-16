@@ -1,12 +1,15 @@
 automod::dir!(pub "src/game/score");
 
 use super::{
-    AudioAssets, FontAssets, GameState, bird::components::Bird, layer, pipe::components::Pipe,
+    AudioAssets, FontAssets, GameState,
+    bird::components::Bird,
+    layer,
+    pipe::components::{LowerPipe, Scored},
 };
 use crate::{GameOverPhase, SCREEN_HEIGHT};
 use bevy::{camera::visibility::NoFrustumCulling, prelude::*, sprite::Anchor};
 use components::*;
-use flappybust::sound;
+use flappybust::{Position, sound};
 
 const CURRENT_SCORE_FONT_SIZE: f32 = 53.3;
 const SCOREBOARD_FONT_SIZE: f32 = 33.3;
@@ -21,7 +24,7 @@ impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Score>()
             .add_systems(OnEnter(GameState::Playing), spawn_current_score)
-            .add_systems(Update, record.run_if(in_state(GameState::Playing)))
+            .add_systems(FixedPostUpdate, record.run_if(in_state(GameState::Playing)))
             .add_systems(OnEnter(GameState::Over), save_highest)
             .add_systems(OnEnter(GameOverPhase::Medal), spawn_scoreboard_score);
     }
@@ -73,21 +76,21 @@ fn spawn_scoreboard_score(mut commands: Commands, score: Res<Score>, font_assets
     }
 }
 
+/// Lower pipes the bird hasn't passed yet.
+type Unscored = (With<LowerPipe>, Without<Scored>);
+
 /// Score a point each time the bird passes a pipe pair (counted on the lower pipe).
 fn record(
     mut commands: Commands,
     audio_assets: Res<AudioAssets>,
-    bird: Single<&Transform, With<Bird>>,
-    mut pipes: Query<(&mut Pipe, &Transform)>,
+    bird: Single<&Position, With<Bird>>,
+    pipes: Query<(Entity, &Position), Unscored>,
     mut score: ResMut<Score>,
     mut current_score: Single<&mut Text2d, With<CurrentScore>>,
 ) {
-    for (mut pipe, pipe_transform) in &mut pipes {
-        if !pipe.flip_y
-            && !pipe.scored
-            && bird.translation.x + Bird::WIDTH / 2.0 > pipe_transform.translation.x
-        {
-            pipe.scored = true;
+    for (pipe, pipe_position) in &pipes {
+        if bird.x + Bird::WIDTH / 2.0 > pipe_position.x {
+            commands.entity(pipe).insert(Scored);
             score.current += 1;
             score.highest = score.current.max(score.highest);
             current_score.0 = score.current.to_string();

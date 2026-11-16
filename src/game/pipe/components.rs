@@ -1,16 +1,20 @@
 use super::super::layer;
 use crate::GameState;
 use bevy::prelude::*;
+use flappybust::Position;
 use std::ops::Range;
 use rand::{random_bool, random_range};
 
 #[derive(Component)]
-pub struct Pipe {
-    /// Whether this is the upper (flipped) pipe of a pair.
-    pub flip_y: bool,
-    /// Whether the bird has already scored on this pipe.
-    pub scored: bool,
-}
+pub struct Pipe;
+
+/// The lower pipe of a pair, which scoring and respawning go by.
+#[derive(Component)]
+pub struct LowerPipe;
+
+/// Marks a lower pipe the bird has already scored on.
+#[derive(Component)]
+pub struct Scored;
 
 impl Pipe {
     pub const WIDTH: f32 = 52f32;
@@ -34,21 +38,20 @@ impl Pipe {
     ) {
         let y = random_range(Self::LOWER_Y);
 
-        for (flip_y, y) in [(false, y), (true, y + Self::GAP + Self::HEIGHT)] {
-            commands.spawn((
+        let pipe = |y, flip_y| {
+            (
                 Sprite {
                     image: texture.clone(),
                     flip_y,
                     ..default()
                 },
-                Transform::from_xyz(x, y, layer::PIPE),
-                Pipe {
-                    flip_y,
-                    scored: false,
-                },
+                Position(Vec3::new(x, y, layer::PIPE)),
+                Pipe,
                 DespawnOnExit(GameState::Over),
-            ));
-        }
+            )
+        };
+        commands.spawn((pipe(y, false), LowerPipe));
+        commands.spawn(pipe(y + Self::GAP + Self::HEIGHT, true));
 
         if random_bool(Coin::CHANCE) {
             // Anywhere in the gap, fully clear of both pipes.
@@ -62,7 +65,7 @@ impl Pipe {
                     rect: Some(Rect::new(0.0, 0.0, Coin::SIZE, Coin::SIZE)),
                     ..default()
                 },
-                Transform::from_xyz(x, y, layer::COIN),
+                Position(Vec3::new(x, y, layer::COIN)),
                 Coin,
                 DespawnOnExit(GameState::Over),
             ));
