@@ -82,23 +82,68 @@ fn snap_frame_time(
     monitor: Query<&Monitor, With<PrimaryMonitor>>,
     mut strategy: ResMut<TimeUpdateStrategy>,
     mut last: Local<Option<Instant>>,
+    mut estimate: Local<f64>,
 ) {
     let now = Instant::now();
     let Some(prev) = last.replace(now) else {
         return;
     };
-    let Some(millihertz) = monitor
+    let elapsed = (now - prev).as_secs_f64();
+
+    let refresh = match monitor
         .iter()
         .next()
         .and_then(|m| m.refresh_rate_millihertz)
-    else {
-        return;
+    {
+        Some(millihertz) => 1000.0 / millihertz as f64,
+        // Browsers don't report a monitor, so estimate the refresh period instead.
+        None => {
+            *estimate = estimate_refresh(*estimate, elapsed);
+            *estimate
+        }
     };
 
-    let refresh = Duration::from_secs_f64(1000.0 / millihertz as f64);
-    let refreshes = ((now - prev).as_secs_f64() / refresh.as_secs_f64())
-        .round()
-        .max(1.0);
+    let refreshes = (elapsed / refresh).round().max(1.0);
 
-    *strategy = TimeUpdateStrategy::ManualDuration(refresh.mul_f64(refreshes));
+    *strategy = TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(refresh * refreshes));
+}
+
+/// Refine the estimated refresh period (in seconds) with a newly measured frame time.
+///
+/// A faster frame means the estimate was too long (e.g. the first frame included loading),
+/// so take it outright. Otherwise smooth towards the frame time divided by the refreshes it
+/// spanned, so dropped frames don't pull the estimate up.
+fn estimate_refresh(estimate: f64, elapsed: f64) -> f64 {
+    if estimate == 0.0 || elapsed < estimate * 0.8 {
+        return elapsed;
+    }
+
+    let refreshes = (elapsed / estimate).round();
+
+    estimate + (elapsed / refreshes - estimate) * 0.05
+}
+
+#[cfg(test)]
+mod tests {
+    use super::estimate_refresh;
+
+    #[test]
+    fn estimate_refresh_settles_on_jittery_60hz() {
+        // A slow first frame from loading, then jittery 60 Hz frames with a dropped one.
+        let mut estimate = estimate_refresh(0.0, 0.25);
+        for (i, jitter) in [0.0012, -0.0009, 0.0004, -0.0013, 0.0008]
+            .iter()
+            .cycle()
+            .take(300)
+            .enumerate()
+        {
+            let dropped = if i == 150 { 2.0 } else { 1.0 };
+            estimate = estimate_refresh(estimate, 1.0 / 60.0 * dropped + jitter);
+        }
+
+        assert!(
+            (estimate - 1.0 / 60.0).abs() < 0.0003,
+            "estimate was {estimate}"
+        );
+    }
 }
