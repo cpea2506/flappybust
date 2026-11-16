@@ -1,3 +1,4 @@
+use crate::GAME_SPEED;
 use bevy::prelude::*;
 
 #[derive(Component, Default, Clone, Copy)]
@@ -7,6 +8,9 @@ pub struct Background {
 }
 
 impl Background {
+    /// Slower than the base and pipes so the distant city scrolls with parallax.
+    pub const SPEED: f32 = GAME_SPEED / 3.0;
+
     pub fn new(x: f32, y: f32, secondary: bool) -> Self {
         Background {
             translation: Vec3 { x, y, z: 0f32 },
