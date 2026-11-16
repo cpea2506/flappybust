@@ -75,6 +75,9 @@ pub struct Coin;
 
 impl Coin {
     pub const SIZE: f32 = 16f32;
+    /// Frames stacked vertically in the sprite sheet.
+    pub(super) const FRAMES: u32 = 10;
+    pub(super) const FRAME_SECS: f32 = 0.08;
     /// Chance that a pipe pair has a coin.
     const CHANCE: f64 = 0.5;
 }

@@ -15,7 +15,10 @@ pub struct PipePlugin;
 impl Plugin for PipePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn)
-            .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
+            .add_systems(
+                Update,
+                (moving, spin_coins).run_if(in_state(GameState::Playing)),
+            );
     }
 }
 
@@ -53,5 +56,15 @@ fn moving(
                 Pipe::spawn_pair(&mut commands, texture, &image_assets.coin, x);
             }
         }
+    }
+}
+
+/// Step every coin through its sprite sheet frames, all in sync.
+fn spin_coins(time: Res<Time>, mut coins: Query<&mut Sprite, With<Coin>>) {
+    let frame = (time.elapsed_secs() / Coin::FRAME_SECS) as u32 % Coin::FRAMES;
+    let top = frame as f32 * Coin::SIZE;
+
+    for mut sprite in &mut coins {
+        sprite.rect = Some(Rect::new(0.0, top, Coin::SIZE, top + Coin::SIZE));
     }
 }
