@@ -6,7 +6,19 @@ edition = "2024"
 [dependencies]
 rand = "0.10.4"
 automod = "1.0.17"
-bevy = "0.20.1"
+bevy = { version = "0.20.1", default-features = false, features = [
+  "default_app",
+  "bevy_sprite_render",
+  "bevy_text",
+  "png",
+  "audio",
+  "std",
+  "multi_threaded",
+  "bevy_winit",
+  "webgl2",
+  "x11",
+  "wayland",
+] }
 bevy_asset_loader = { version = "0.28.1", features = [
   "2d",
   "standard_dynamic_assets",
