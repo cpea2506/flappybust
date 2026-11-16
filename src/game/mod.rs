@@ -23,6 +23,7 @@ use score::ScorePlugin;
 mod layer {
     pub const BACKGROUND: f32 = 0.0;
     pub const PIPE: f32 = 0.1;
+    pub const COIN: f32 = 0.15;
     pub const READY_MESSAGE: f32 = 0.1;
     /// Current score, game over text, scoreboard and restart button.
     pub const HUD: f32 = 0.2;

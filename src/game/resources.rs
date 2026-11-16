@@ -56,6 +56,9 @@ pub struct ImageAssets {
     #[asset(key = "red_pipe")]
     pub red_pipe: Handle<Image>,
 
+    #[asset(key = "coin")]
+    pub coin: Handle<Image>,
+
     #[asset(key = "ready_message")]
     pub ready_message: Handle<Image>,
 
