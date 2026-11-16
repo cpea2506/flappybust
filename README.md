@@ -41,7 +41,4 @@ $ cargo watch_dynamic
   <img width="400" src="https://user-images.githubusercontent.com/42694704/217840610-39436287-6767-4552-9028-9a7a1a8bd9d4.png"/>
   <img width="400" src="https://user-images.githubusercontent.com/42694704/217840556-f815d5b1-5d97-4121-82d1-2688f702f24b.png"/>
   <img width="400" src="https://user-images.githubusercontent.com/42694704/217840429-f2d7fe39-8399-44fa-8203-6e5785ba1499.png"/>
-  <div align="center">
-    <video src="https://user-images.githubusercontent.com/42694704/217842750-59fc3f63-95af-41d4-8751-ddd0234c34fc.mov"/>
-  <div/>
 </div>
