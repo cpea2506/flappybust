@@ -19,33 +19,34 @@ pub enum GameState {
 fn main() {
     let mut app = App::new();
 
-    app.init_state::<GameState>()
-        .add_plugins((
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: "Flappybust 🦀🦋".to_string(),
-                        resolution: (SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32).into(),
-                        ..default()
-                    }),
-                    ..default()
-                })
-                .set(AssetPlugin {
-                    meta_check: AssetMetaCheck::Never,
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Flappybust 🦀🦋".to_string(),
+                    resolution: (SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32).into(),
                     ..default()
                 }),
-            GamePlugin,
-        ))
-        .add_systems(Startup, setup_camera)
-        .add_systems(
-            Update,
-            (
-                start_game.run_if(in_state(GameState::Ready)),
-                restart_game.run_if(in_state(GameState::Over)),
-                close_on_esc,
-            ),
-        )
-        .run();
+                ..default()
+            })
+            .set(AssetPlugin {
+                meta_check: AssetMetaCheck::Never,
+                ..default()
+            }),
+    )
+    // Needs the state schedules from `DefaultPlugins`, and must exist before `GamePlugin`.
+    .init_state::<GameState>()
+    .add_plugins(GamePlugin)
+    .add_systems(Startup, setup_camera)
+    .add_systems(
+        Update,
+        (
+            start_game.run_if(in_state(GameState::Ready)),
+            restart_game.run_if(in_state(GameState::Over)),
+            close_on_esc,
+        ),
+    )
+    .run();
 }
 
 fn setup_camera(mut commands: Commands) {
