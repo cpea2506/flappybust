@@ -107,6 +107,10 @@ fn fall(time: Res<Time>, bird: Single<(&mut Bird, &mut Transform)>) {
     transform.translation.y =
         (transform.translation.y - bird.velocity * frames).max(Bird::GROUND_Y);
     transform.rotation = Quat::from_rotation_z(bird.rotation.min(Bird::MAX_ROTATION));
+
+    let surge_x = Bird::START.x - bird.velocity * Bird::SURGE;
+    let ease = 1.0 - (1.0 - Bird::SURGE_EASE).powf(frames);
+    transform.translation.x = transform.translation.x.lerp(surge_x, ease);
 }
 
 fn fly(mut commands: Commands, mut bird: Single<&mut Bird>, audio_assets: Res<AudioAssets>) {

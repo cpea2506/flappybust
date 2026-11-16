@@ -57,6 +57,11 @@ impl Bird {
     pub const MIN_ROTATION: f32 = -90f32.to_radians();
     /// Radians turned nose-down per frame.
     pub const ROTATION_SPEED: f32 = 3f32.to_radians();
+    /// Pixels the bird surges ahead of `START.x` per unit of climbing speed, and drops
+    /// behind while falling, so it looks like it flies forward instead of hanging in place.
+    pub const SURGE: f32 = 1.5;
+    /// Share of the way to its surge position the bird moves each frame.
+    pub const SURGE_EASE: f32 = 0.08;
 }
 
 impl Default for Bird {
