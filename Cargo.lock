@@ -2649,6 +2649,7 @@ dependencies = [
  "bevy_asset_loader",
  "getrandom 0.4.3",
  "rand",
+ "web-sys",
 ]
 
 [[package]]

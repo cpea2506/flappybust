@@ -24,6 +24,7 @@ impl Plugin for ScorePlugin {
         app.init_resource::<Score>()
             .add_systems(OnEnter(GameState::Playing), spawn_current_score)
             .add_systems(Update, record.run_if(in_state(GameState::Playing)))
+            .add_systems(OnEnter(GameState::Over), save_highest)
             .add_systems(OnEnter(GameOverPhase::Medal), spawn_scoreboard_score);
     }
 }
@@ -95,5 +96,47 @@ fn record(
 
             commands.spawn(sound(&audio_assets.score));
         }
+    }
+}
+
+/// Key of the best score in browser local storage.
+///
+/// On desktop the best score only lasts for the game session.
+#[cfg(target_arch = "wasm32")]
+const HIGHEST_KEY: &str = "flappybust_best";
+
+fn save_highest(score: Res<Score>) {
+    if score.current == score.highest && score.current > 0 {
+        store_highest(score.highest);
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn load_highest() -> usize {
+    0
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn store_highest(_highest: usize) {}
+
+#[cfg(target_arch = "wasm32")]
+fn local_storage() -> Option<web_sys::Storage> {
+    web_sys::window()?.local_storage().ok()?
+}
+
+#[cfg(target_arch = "wasm32")]
+fn load_highest() -> usize {
+    local_storage()
+        .and_then(|storage| storage.get_item(HIGHEST_KEY).ok()?)
+        .and_then(|best| best.parse().ok())
+        .unwrap_or(0)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn store_highest(highest: usize) {
+    if let Some(storage) = local_storage()
+        && storage.set_item(HIGHEST_KEY, &highest.to_string()).is_err()
+    {
+        warn!("Failed to save best score");
     }
 }

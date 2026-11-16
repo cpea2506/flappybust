@@ -27,3 +27,5 @@ bevy_asset_loader = { version = "0.28.1", features = [
 # `rand` needs a browser randomness source on the web build.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.4", features = ["wasm_js"] }
+# Best score is kept in the browser's local storage.
+web-sys = { version = "0.3", features = ["Window", "Storage"] }
