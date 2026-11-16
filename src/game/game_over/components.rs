@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy::prelude::*;
 
 #[derive(Clone, Copy)]
 pub enum MedalType {
@@ -23,6 +23,10 @@ impl Medal {
 
 #[derive(Component)]
 pub struct RestartButton;
+
+impl RestartButton {
+    pub const SIZE: Vec2 = Vec2::new(114f32, 40f32);
+}
 
 #[derive(Component)]
 pub struct Scoreboard {

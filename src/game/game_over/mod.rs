@@ -8,6 +8,7 @@ use super::{
 };
 use crate::GameState;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use components::*;
 use events::*;
 use flappybust::{Switcher, despawn, frames};
@@ -30,6 +31,7 @@ impl Plugin for GameOverPlugin {
                     move_scoreboard_up,
                     bounce_game_over_text,
                     display_restart_btn,
+                    restart_game,
                 )
                     .run_if(in_state(GameState::Over)),
             )
@@ -45,21 +47,21 @@ impl Plugin for GameOverPlugin {
     }
 }
 
-fn spawn_game_over(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_game_over(mut commands: Commands, image_assets: Res<ImageAssets>) {
     commands.spawn((
-        Sprite::from_image(asset_server.load("images/game_over.png")),
+        Sprite::from_image(image_assets.game_over.clone()),
         Transform::from_xyz(0f32, 351f32, 0.2),
         GameOverText::default(),
     ));
 
     commands.spawn((
-        Sprite::from_image(asset_server.load("images/scoreboard.png")),
+        Sprite::from_image(image_assets.scoreboard.clone()),
         Transform::from_xyz(0f32, -199f32, 0.2),
         Scoreboard::default(),
     ));
 
     commands.spawn((
-        Sprite::from_image(asset_server.load("images/restart_btn.png")),
+        Sprite::from_image(image_assets.restart_btn.clone()),
         Visibility::Hidden,
         Transform::from_xyz(0f32, -35f32, 0.2),
         RestartButton,
@@ -197,5 +199,33 @@ fn scale_medal(
 
     if scale == 1f32 {
         audio_event.write(AudioEvent::new(&audio_assets.ding, false));
+    }
+}
+
+fn restart_game(
+    key: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    camera: Single<(&Camera, &GlobalTransform)>,
+    restart_btn: Single<&Transform, With<RestartButton>>,
+    restart_btn_displayed: MessageReader<RestartButtonDisplayed>,
+) {
+    if restart_btn_displayed.is_empty() {
+        return;
+    }
+
+    let (camera, camera_transform) = *camera;
+    let clicked_btn = mouse.just_pressed(MouseButton::Left)
+        && window
+            .cursor_position()
+            .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor).ok())
+            .is_some_and(|cursor| {
+                Rect::from_center_size(restart_btn.translation.truncate(), RestartButton::SIZE)
+                    .contains(cursor)
+            });
+
+    if key.just_pressed(KeyCode::Space) || clicked_btn {
+        next_state.set(GameState::Ready);
     }
 }

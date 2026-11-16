@@ -1,12 +1,12 @@
 automod::dir!("src/game");
 
-pub mod audio;
+mod audio;
 mod background;
 mod base;
 mod bird;
 mod collision;
-pub mod game_over;
-pub mod pipe;
+mod game_over;
+mod pipe;
 mod ready_message;
 mod score;
 
@@ -51,6 +51,7 @@ impl Plugin for GamePlugin {
                 ScorePlugin,
                 GameOverPlugin,
             ))
+            .add_systems(Update, start_game.run_if(in_state(GameState::Ready)))
             .add_systems(OnEnter(GameState::Playing), play_ambient_music)
             .add_systems(OnExit(GameState::Playing), despawn::<AmbientMusic>)
             .add_systems(OnExit(GameState::Over), (init_datetime, stop_all_songs));
@@ -69,4 +70,14 @@ fn stop_all_songs(audio_sinks: Query<&AudioSink>) {
 
 fn play_ambient_music(mut audio_event: MessageWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {
     audio_event.write(AudioEvent::new_with_volume(&audio_assets.theme, true, 0.2));
+}
+
+fn start_game(
+    key: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if key.just_pressed(KeyCode::Space) || mouse.just_pressed(MouseButton::Left) {
+        next_state.set(GameState::Playing);
+    }
 }

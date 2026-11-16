@@ -64,6 +64,15 @@ pub struct ImageAssets {
     #[asset(key = "ready_message")]
     pub ready_message: Handle<Image>,
 
+    // game over
+    #[asset(key = "game_over")]
+    pub game_over: Handle<Image>,
+    #[asset(key = "scoreboard")]
+    pub scoreboard: Handle<Image>,
+    #[asset(key = "restart_btn")]
+    pub restart_btn: Handle<Image>,
+
+    // medals
     #[asset(key = "bronze_medal")]
     pub bronze_medal: Handle<Image>,
     #[asset(key = "silver_medal")]

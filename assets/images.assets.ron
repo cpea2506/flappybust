@@ -26,9 +26,6 @@
     "base": File (
         path: "images/base.png"
     ),
-    "background": File (
-        path: "images/background.png"
-    ),
     "bronze_medal": File (
         path: "images/medal_bronze.png"
     ),
@@ -49,6 +46,9 @@
     ),
     "restart_btn": File (
         path: "images/restart_btn.png"
+    ),
+    "game_over": File (
+        path: "images/game_over.png"
     )
 })
 
