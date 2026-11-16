@@ -70,7 +70,10 @@ fn bird_soul_spawn(
         BirdSoul,
         DespawnOnExit(GameState::Over),
     ));
-    commands.spawn(sound(&audio_assets.heaven));
+    commands.spawn((
+        sound(&audio_assets.heaven),
+        DespawnOnExit(GameOverPhase::Soul),
+    ));
 }
 
 fn bird_soul_fly(
