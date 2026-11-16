@@ -12,6 +12,8 @@ use std::time::Duration;
 
 const SCREEN_WIDTH: f32 = 288f32;
 const SCREEN_HEIGHT: f32 = 512f32;
+/// Horizontal scroll speed of the background, base and pipes, in pixels per 60 FPS frame.
+const GAME_SPEED: f32 = 1.5;
 
 /// Represents the current state of the game.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, States)]

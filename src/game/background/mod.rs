@@ -1,7 +1,7 @@
 automod::dir!("src/game/background");
 
 use super::{DateTime, ImageAssets};
-use crate::{GameState, SCREEN_WIDTH};
+use crate::{GAME_SPEED, GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use components::Background;
 use flappybust::frames;
@@ -53,7 +53,7 @@ fn has_existed(background: Query<(), With<Background>>) -> bool {
 fn moving(time: Res<Time>, mut background: Query<(&mut Background, &mut Transform)>) {
     for (mut background, mut transform) in &mut background {
         background.translation.x =
-            (background.translation.x - 1.5f32 * frames(&time)) % SCREEN_WIDTH;
+            (background.translation.x - GAME_SPEED * frames(&time)) % SCREEN_WIDTH;
 
         if background.secondary {
             transform.translation.x = background.translation.x + SCREEN_WIDTH;

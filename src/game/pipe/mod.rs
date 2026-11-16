@@ -1,7 +1,7 @@
 automod::dir!(pub "src/game/pipe");
 
 use super::{DateTime, ImageAssets};
-use crate::{GameState, SCREEN_WIDTH};
+use crate::{GAME_SPEED, GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use components::Pipe;
 use flappybust::{despawn, frames};
@@ -33,7 +33,7 @@ fn moving(
     datetime: Res<DateTime>,
     time: Res<Time>,
 ) {
-    let distance = frames(&time);
+    let distance = GAME_SPEED * frames(&time);
 
     for (entity, pipe, mut transform) in &mut pipes {
         transform.translation.x -= distance;

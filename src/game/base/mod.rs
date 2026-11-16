@@ -1,7 +1,7 @@
 automod::dir!(pub "src/game/base");
 
 use super::ImageAssets;
-use crate::{GameState, SCREEN_HEIGHT};
+use crate::{GAME_SPEED, GameState, SCREEN_HEIGHT};
 use bevy::prelude::*;
 use components::Base;
 use flappybust::frames;
@@ -32,7 +32,7 @@ fn spawn(mut commands: Commands, base: Query<(), With<Base>>, image_assets: Res<
 
 fn moving(time: Res<Time>, mut base: Query<(&mut Base, &mut Transform)>) {
     for (mut base, mut transform) in &mut base {
-        base.translation.x = (base.translation.x - 1.5f32 * frames(&time)) % Base::RESET_POINT;
+        base.translation.x = (base.translation.x - GAME_SPEED * frames(&time)) % Base::RESET_POINT;
 
         if base.secondary {
             transform.translation.x = base.translation.x + Base::RESET_POINT;
