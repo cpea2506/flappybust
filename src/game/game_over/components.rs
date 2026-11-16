@@ -15,7 +15,6 @@ impl Medal {
 pub struct RestartButton;
 
 impl RestartButton {
-    pub const SIZE: Vec2 = Vec2::new(114f32, 40f32);
     pub const Y: f32 = -35f32;
 }
 

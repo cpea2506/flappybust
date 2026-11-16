@@ -9,6 +9,7 @@ automod = "1.0.17"
 bevy = { version = "0.20.1", default-features = false, features = [
   "default_app",
   "bevy_sprite_render",
+  "sprite_picking",
   "bevy_text",
   "png",
   "audio",

@@ -2,8 +2,7 @@ automod::dir!(pub "src/game/game_over");
 
 use super::{AudioAssets, ImageAssets, bird::components::Bird, layer, score::components::Score};
 use crate::{GameOverPhase, GameState};
-use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use components::*;
 use flappybust::{frames, sound};
 
@@ -24,7 +23,9 @@ impl Plugin for GameOverPlugin {
             .add_systems(OnEnter(GameOverPhase::Restart), spawn_restart_btn)
             .add_systems(
                 Update,
-                restart_game.run_if(in_state(GameOverPhase::Restart)),
+                restart_game
+                    .run_if(in_state(GameOverPhase::Restart))
+                    .run_if(input_just_pressed(KeyCode::Space)),
             );
     }
 }
@@ -140,38 +141,23 @@ fn scale_medal(
 }
 
 fn spawn_restart_btn(mut commands: Commands, image_assets: Res<ImageAssets>) {
-    commands.spawn((
-        Sprite::from_image(image_assets.restart_btn.clone()),
-        Transform::from_xyz(0f32, RestartButton::Y, layer::HUD),
-        RestartButton,
-        DespawnOnExit(GameState::Over),
-    ));
+    commands
+        .spawn((
+            Sprite::from_image(image_assets.restart_btn.clone()),
+            Transform::from_xyz(0f32, RestartButton::Y, layer::HUD),
+            RestartButton,
+            DespawnOnExit(GameState::Over),
+        ))
+        // Left click or touch, like the restart press it replaces.
+        .observe(
+            |press: On<PointerPress>, next_state: ResMut<NextState<GameState>>| {
+                if press.button == PointerButton::Primary {
+                    restart_game(next_state);
+                }
+            },
+        );
 }
 
-fn restart_game(
-    key: Res<ButtonInput<KeyCode>>,
-    mouse: Res<ButtonInput<MouseButton>>,
-    touches: Res<Touches>,
-    mut next_state: ResMut<NextState<GameState>>,
-    window: Single<&Window, With<PrimaryWindow>>,
-    camera: Single<(&Camera, &GlobalTransform)>,
-    restart_btn: Single<&Transform, With<RestartButton>>,
-) {
-    let (camera, camera_transform) = *camera;
-    let btn_area = Rect::from_center_size(restart_btn.translation.truncate(), RestartButton::SIZE);
-    // Where the mouse was clicked or a finger touched down this frame.
-    let mut presses = window
-        .cursor_position()
-        .filter(|_| mouse.just_pressed(MouseButton::Left))
-        .into_iter()
-        .chain(touches.iter_just_pressed().map(|touch| touch.position()));
-    let clicked_btn = presses.any(|press| {
-        camera
-            .viewport_to_world_2d(camera_transform, press)
-            .is_ok_and(|press| btn_area.contains(press))
-    });
-
-    if key.just_pressed(KeyCode::Space) || clicked_btn {
-        next_state.set(GameState::Ready);
-    }
+fn restart_game(mut next_state: ResMut<NextState<GameState>>) {
+    next_state.set(GameState::Ready);
 }
