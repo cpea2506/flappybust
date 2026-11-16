@@ -121,7 +121,7 @@ fn fall(
         return;
     }
 
-    bird.velocity += bird.gravity * frames;
+    bird.velocity = (bird.velocity + bird.gravity * frames).min(Bird::MAX_VELOCITY);
 
     bird_transform.translation.y -= bird.velocity * frames;
     bird_transform.rotation = Quat::from_rotation_z(bird.rotation);
