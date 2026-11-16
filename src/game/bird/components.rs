@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use rand::distributions::{Distribution, Standard};
+use rand::{
+    Rng, RngExt,
+    distr::{Distribution, StandardUniform},
+};
 
 #[derive(Clone, Copy)]
 pub(super) enum BirdColor {
@@ -8,9 +11,9 @@ pub(super) enum BirdColor {
     Yellow,
 }
 
-impl Distribution<BirdColor> for Standard {
-    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> BirdColor {
-        match rng.gen_range(0..3) {
+impl Distribution<BirdColor> for StandardUniform {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BirdColor {
+        match rng.random_range(0..3) {
             0 => BirdColor::Red,
             1 => BirdColor::Blue,
             _ => BirdColor::Yellow,

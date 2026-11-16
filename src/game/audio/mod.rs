@@ -9,12 +9,12 @@ pub struct AudioPlugin;
 
 impl Plugin for AudioPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<AudioEvent>()
+        app.add_message::<AudioEvent>()
             .add_systems(Update, play_audio);
     }
 }
 
-fn play_audio(mut commands: Commands, mut audio_events: EventReader<AudioEvent>) {
+fn play_audio(mut commands: Commands, mut audio_events: MessageReader<AudioEvent>) {
     if audio_events.is_empty() {
         return;
     }
@@ -22,17 +22,15 @@ fn play_audio(mut commands: Commands, mut audio_events: EventReader<AudioEvent>)
     for audio_event in audio_events.read() {
         if audio_event.looped {
             commands.spawn((
-                AudioBundle {
-                    source: audio_event.source.clone(),
-                    settings: PlaybackSettings::LOOP.with_volume(Volume::new(audio_event.volume)),
-                },
+                AudioPlayer::new(audio_event.source.clone()),
+                PlaybackSettings::LOOP.with_volume(Volume::Linear(audio_event.volume)),
                 AmbientMusic,
             ));
         } else {
-            commands.spawn(AudioBundle {
-                source: audio_event.source.clone(),
-                settings: PlaybackSettings::ONCE.with_volume(Volume::new(audio_event.volume)),
-            });
+            commands.spawn((
+                AudioPlayer::new(audio_event.source.clone()),
+                PlaybackSettings::ONCE.with_volume(Volume::Linear(audio_event.volume)),
+            ));
         }
     }
 }

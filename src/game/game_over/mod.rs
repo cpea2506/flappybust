@@ -17,11 +17,11 @@ pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ScoreboardDisplayed>()
-            .add_event::<MedalDisplayed>()
-            .add_event::<InTheHeaven>()
-            .add_event::<RestartButtonDisplayed>()
-            .add_event::<GameOverTextDisplayed>()
+        app.add_message::<ScoreboardDisplayed>()
+            .add_message::<MedalDisplayed>()
+            .add_message::<InTheHeaven>()
+            .add_message::<RestartButtonDisplayed>()
+            .add_message::<GameOverTextDisplayed>()
             .add_systems(OnEnter(GameState::Over), (spawn_game_over, spawn_medal))
             .add_systems(
                 Update,
@@ -47,58 +47,47 @@ impl Plugin for GameOverPlugin {
 
 fn spawn_game_over(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_xyz(0f32, 351f32, 0.2),
-            texture: asset_server.load("images/game_over.png"),
-            ..default()
-        },
+        Sprite::from_image(asset_server.load("images/game_over.png")),
+        Transform::from_xyz(0f32, 351f32, 0.2),
         GameOverText::default(),
     ));
 
     commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_xyz(0f32, -199f32, 0.2),
-            texture: asset_server.load("images/scoreboard.png"),
-            ..default()
-        },
+        Sprite::from_image(asset_server.load("images/scoreboard.png")),
+        Transform::from_xyz(0f32, -199f32, 0.2),
         Scoreboard::default(),
     ));
 
     commands.spawn((
-        SpriteBundle {
-            texture: asset_server.load("images/restart_btn.png"),
-            visibility: Visibility::Hidden,
-            transform: Transform::from_xyz(0f32, -35f32, 0.2),
-            ..default()
-        },
+        Sprite::from_image(asset_server.load("images/restart_btn.png")),
+        Visibility::Hidden,
+        Transform::from_xyz(0f32, -35f32, 0.2),
         RestartButton,
     ));
 }
 
 fn display_restart_btn(
-    mut restart_btn: Query<&mut Visibility, With<RestartButton>>,
-    in_the_heaven: EventReader<InTheHeaven>,
-    mut restart_btn_event: EventWriter<RestartButtonDisplayed>,
+    mut visibility: Single<&mut Visibility, With<RestartButton>>,
+    in_the_heaven: MessageReader<InTheHeaven>,
+    mut restart_btn_event: MessageWriter<RestartButtonDisplayed>,
 ) {
     if in_the_heaven.is_empty() {
         return;
     }
 
-    let mut visibility = restart_btn.single_mut();
-
-    if matches!(*visibility, Visibility::Hidden) {
+    if matches!(**visibility, Visibility::Hidden) {
         visibility.on();
     }
 
-    restart_btn_event.send_default();
+    restart_btn_event.write_default();
 }
 
 fn bounce_game_over_text(
     time: Res<Time>,
-    mut game_over_text: Query<(&mut Transform, &mut GameOverText)>,
-    mut game_over_text_event: EventWriter<GameOverTextDisplayed>,
+    game_over_text: Single<(&mut Transform, &mut GameOverText)>,
+    mut game_over_text_event: MessageWriter<GameOverTextDisplayed>,
 ) {
-    let (mut transform, mut game_over_text) = game_over_text.single_mut();
+    let (mut transform, mut game_over_text) = game_over_text.into_inner();
 
     let frames = frames(&time);
 
@@ -113,16 +102,16 @@ fn bounce_game_over_text(
         }
 
         transform.translation.y = 156f32;
-        game_over_text_event.send_default();
+        game_over_text_event.write_default();
     }
 }
 
 fn move_scoreboard_up(
     time: Res<Time>,
-    mut scoreboard: Query<(&mut Transform, &mut Scoreboard)>,
-    mut scoreboard_event: EventWriter<ScoreboardDisplayed>,
+    scoreboard: Single<(&mut Transform, &mut Scoreboard)>,
+    mut scoreboard_event: MessageWriter<ScoreboardDisplayed>,
 ) {
-    let (mut transform, mut scoreboard) = scoreboard.single_mut();
+    let (mut transform, mut scoreboard) = scoreboard.into_inner();
 
     let frames = frames(&time);
 
@@ -132,7 +121,7 @@ fn move_scoreboard_up(
         (transform.translation.y + scoreboard.velocity * frames).clamp(-199f32, 57f32);
 
     if transform.translation.y == 57f32 {
-        scoreboard_event.send_default();
+        scoreboard_event.write_default();
     }
 }
 
@@ -150,24 +139,19 @@ fn spawn_medal(mut commands: Commands, score: Res<Score>, image_assets: Res<Imag
     }
 
     commands.spawn((
-        SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(-65f32, 47f32, 0.4),
-                scale: Vec3::new(25f32, 25f32, 0f32),
-                ..Transform::IDENTITY
-            },
-            visibility: Visibility::Hidden,
-            texture: match medal_name {
-                Some(name) => match name {
-                    MedalType::Bronze => image_assets.bronze_medal.clone(),
-                    MedalType::Silver => image_assets.silver_medal.clone(),
-                    MedalType::Gold => image_assets.gold_medal.clone(),
-                    MedalType::Platinum => image_assets.platinum_medal.clone(),
-                },
-                None => Handle::Weak(AssetId::default()),
-            },
-            ..default()
+        Sprite::from_image(match medal_name {
+            Some(MedalType::Bronze) => image_assets.bronze_medal.clone(),
+            Some(MedalType::Silver) => image_assets.silver_medal.clone(),
+            Some(MedalType::Gold) => image_assets.gold_medal.clone(),
+            Some(MedalType::Platinum) => image_assets.platinum_medal.clone(),
+            None => default(),
+        }),
+        Transform {
+            translation: Vec3::new(-65f32, 47f32, 0.4),
+            scale: Vec3::new(25f32, 25f32, 0f32),
+            ..Transform::IDENTITY
         },
+        Visibility::Hidden,
         Medal::new(medal_name),
     ));
 }
@@ -176,12 +160,12 @@ fn spawn_medal(mut commands: Commands, score: Res<Score>, image_assets: Res<Imag
 fn scale_medal(
     time: Res<Time>,
     audio_assets: Res<AudioAssets>,
-    mut medal: Query<(&mut Transform, &mut Visibility, &Medal)>,
-    mut audio_event: EventWriter<AudioEvent>,
-    mut medal_event: EventWriter<MedalDisplayed>,
-    game_over_text_displayed: EventReader<GameOverTextDisplayed>,
-    death_event: EventReader<DeathEvent>,
-    scoreboard_displayed: EventReader<ScoreboardDisplayed>,
+    medal: Single<(&mut Transform, &mut Visibility, &Medal)>,
+    mut audio_event: MessageWriter<AudioEvent>,
+    mut medal_event: MessageWriter<MedalDisplayed>,
+    game_over_text_displayed: MessageReader<GameOverTextDisplayed>,
+    death_event: MessageReader<DeathEvent>,
+    scoreboard_displayed: MessageReader<ScoreboardDisplayed>,
 ) {
     if scoreboard_displayed.is_empty()
         || death_event.is_empty()
@@ -190,10 +174,10 @@ fn scale_medal(
         return;
     }
 
-    let (mut transform, mut visibility, medal) = medal.single_mut();
+    let (mut transform, mut visibility, medal) = medal.into_inner();
 
     if medal.get().is_none() {
-        medal_event.send_default();
+        medal_event.write_default();
         return;
     }
 
@@ -203,7 +187,7 @@ fn scale_medal(
 
     // Reach the final end position.
     if transform.scale.x <= 1f32 {
-        medal_event.send_default();
+        medal_event.write_default();
         return;
     }
 
@@ -212,6 +196,6 @@ fn scale_medal(
     transform.scale = Vec3::new(scale, scale, 1f32);
 
     if scale == 1f32 {
-        audio_event.send(AudioEvent::new(&audio_assets.ding, false));
+        audio_event.write(AudioEvent::new(&audio_assets.ding, false));
     }
 }

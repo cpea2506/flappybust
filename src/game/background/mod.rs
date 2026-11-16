@@ -38,7 +38,7 @@ fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>, datetime: Res<D
 }
 
 fn replace_texture(
-    mut backgrounds: Query<&mut Handle<Image>, With<Background>>,
+    mut backgrounds: Query<&mut Sprite, With<Background>>,
     datetime: Res<DateTime>,
     image_assets: Res<ImageAssets>,
 ) {
@@ -47,12 +47,12 @@ fn replace_texture(
         DateTime::Night => image_assets.bg_night.clone(),
     };
 
-    for mut texture in &mut backgrounds {
-        if *texture == new_texture {
+    for mut sprite in &mut backgrounds {
+        if sprite.image == new_texture {
             return;
         }
 
-        *texture = new_texture.clone_weak();
+        sprite.image = new_texture.clone();
     }
 }
 

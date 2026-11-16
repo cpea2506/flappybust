@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct AudioEvent {
     pub(super) source: Handle<AudioSource>,
     pub(super) looped: bool,

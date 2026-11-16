@@ -66,8 +66,8 @@ fn stop_all_songs(audio_sinks: Query<&AudioSink>) {
     }
 }
 
-fn play_ambient_music(mut audio_event: EventWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {
-    audio_event.send(AudioEvent::new_with_volume(&audio_assets.theme, true, 0.2));
+fn play_ambient_music(mut audio_event: MessageWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {
+    audio_event.write(AudioEvent::new_with_volume(&audio_assets.theme, true, 0.2));
 }
 
 fn stop_ambient_music(ambient_sinks: Query<&AudioSink, With<AmbientMusic>>) {

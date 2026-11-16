@@ -1,7 +1,7 @@
-use bevy::ecs::event::Event;
+use bevy::prelude::Message;
 
-#[derive(Default, Event)]
+#[derive(Default, Message)]
 pub struct DeathEvent;
 
-#[derive(Default, Event)]
+#[derive(Default, Message)]
 pub struct InTheHeaven;

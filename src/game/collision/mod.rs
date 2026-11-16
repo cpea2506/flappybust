@@ -9,8 +9,8 @@ use super::{
 };
 use crate::GameState;
 use bevy::{
-    math::bounding::{Aabb2d, IntersectsVolume},
     prelude::*,
+    shape::{Aabb2d, IntersectsVolume},
 };
 use events::CollisionEvent;
 use flappybust::BasicMath;
@@ -21,7 +21,7 @@ pub struct CollisionPlugin;
 
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_event::<CollisionEvent>().add_systems(
+        app.add_message::<CollisionEvent>().add_systems(
             Update,
             (
                 check_collision
@@ -34,15 +34,13 @@ impl Plugin for CollisionPlugin {
 }
 
 fn check_collision(
-    mut bird: Query<&mut Transform, With<Bird>>,
+    mut bird_transform: Single<&mut Transform, With<Bird>>,
     pipes: Query<(&Transform, &Pipe), Without<Bird>>,
     bases: Query<&Base, (Without<Pipe>, Without<Bird>)>,
     game_state: Res<State<GameState>>,
-    mut collision_event: EventWriter<CollisionEvent>,
-    mut death_event: EventWriter<DeathEvent>,
+    mut collision_event: MessageWriter<CollisionEvent>,
+    mut death_event: MessageWriter<DeathEvent>,
 ) {
-    let mut bird_transform = bird.single_mut();
-
     // There are two bases (for animating purpose) but we only need to take one
     // because bird only collides with the top of any base.
     let base = bases
@@ -55,8 +53,8 @@ fn check_collision(
         // this is for bird to lay on the ground
         bird_transform.translation.y = base.collider_pos + Bird::HEIGHT.half();
 
-        death_event.send_default();
-        collision_event.send_default();
+        death_event.write_default();
+        collision_event.write_default();
     }
 
     // Check pipe collision only on playing state
@@ -81,7 +79,7 @@ fn check_collision(
                 bird_collide(flipped_pipe_transform.translation, flipped_pipe.size);
 
             if pipe_collision || flipped_pipe_collision {
-                collision_event.send_default();
+                collision_event.write_default();
             }
         }
     }
@@ -90,14 +88,14 @@ fn check_collision(
 fn on_collision(
     mut next_state: ResMut<NextState<GameState>>,
     audio_assets: Res<AudioAssets>,
-    mut audio_event: EventWriter<AudioEvent>,
-    collision_event: EventReader<CollisionEvent>,
+    mut audio_event: MessageWriter<AudioEvent>,
+    collision_event: MessageReader<CollisionEvent>,
 ) {
     if collision_event.is_empty() {
         return;
     }
 
-    audio_event.send_batch(vec![
+    audio_event.write_batch(vec![
         AudioEvent::new(&audio_assets.die, false),
         AudioEvent::new(&audio_assets.hit, false),
     ]);

@@ -15,7 +15,7 @@ pub struct BirdPlugin;
 
 impl Plugin for BirdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<DeathEvent>()
+        app.add_message::<DeathEvent>()
             .add_systems(OnEnter(GameState::Ready), spawn)
             .add_systems(
                 Update,
@@ -49,11 +49,8 @@ fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>) {
 
     commands.spawn((
         bird,
-        SpriteBundle {
-            texture: animation_frames[0].clone(),
-            transform: Transform::from_translation(bird.translation),
-            ..default()
-        },
+        Sprite::from_image(animation_frames[0].clone()),
+        Transform::from_translation(bird.translation),
         FlapAnimation::new(0.12, animation_frames),
         BouncingAnimation::default(),
     ));
@@ -61,11 +58,10 @@ fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>) {
 
 fn bird_soul_spawn(
     mut commands: Commands,
-    bird: Query<&Bird>,
+    bird: Single<&Bird>,
     base: Query<&Base>,
     image_assets: Res<ImageAssets>,
 ) {
-    let bird = bird.single();
     let base = base.iter().next().expect("Base must be initialized first.");
     let translation = Vec3::new(
         bird.translation.x,
@@ -74,48 +70,45 @@ fn bird_soul_spawn(
     );
 
     commands.spawn((
-        SpriteBundle {
-            texture: image_assets.bird_soul.clone(),
-            visibility: Visibility::Hidden,
-            transform: Transform::from_translation(translation),
-            ..default()
-        },
+        Sprite::from_image(image_assets.bird_soul.clone()),
+        Visibility::Hidden,
+        Transform::from_translation(translation),
         BirdSoul,
     ));
 }
 
 fn bird_soul_fly(
     time: Res<Time>,
-    mut bird_soul: Query<(&mut Transform, &mut Visibility), With<BirdSoul>>,
-    mut audio_event: EventWriter<AudioEvent>,
+    bird_soul: Single<(&mut Transform, &mut Visibility), With<BirdSoul>>,
+    mut audio_event: MessageWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
-    medal_event: EventReader<MedalDisplayed>,
-    mut in_heaven: EventWriter<InTheHeaven>,
+    medal_event: MessageReader<MedalDisplayed>,
+    mut in_heaven: MessageWriter<InTheHeaven>,
 ) {
     if medal_event.is_empty() {
         return;
     }
 
-    let (mut transform, mut visibility) = bird_soul.single_mut();
+    let (mut transform, mut visibility) = bird_soul.into_inner();
 
     if matches!(*visibility, Visibility::Hidden) {
         visibility.on();
-        audio_event.send(AudioEvent::new(&audio_assets.heaven, false));
+        audio_event.write(AudioEvent::new(&audio_assets.heaven, false));
     }
 
     transform.translation.y += frames(&time);
 
     if transform.translation.y >= 267f32 {
-        in_heaven.send_default();
+        in_heaven.write_default();
     }
 }
 
 fn fall(
     time: Res<Time>,
-    mut bird: Query<(&mut Bird, &mut Transform)>,
-    death_event: EventReader<DeathEvent>,
+    bird: Single<(&mut Bird, &mut Transform)>,
+    death_event: MessageReader<DeathEvent>,
 ) {
-    let (mut bird, mut bird_transform) = bird.single_mut();
+    let (mut bird, mut bird_transform) = bird.into_inner();
     let frames = frames(&time);
 
     // Rotate down at min -90deg and rotate up at max 25deg.
@@ -135,42 +128,37 @@ fn fall(
 }
 
 fn fly(
-    mut bird: Query<&mut Bird>,
+    mut bird: Single<&mut Bird>,
     keys: Res<ButtonInput<KeyCode>>,
     buttons: Res<ButtonInput<MouseButton>>,
     audio_assets: Res<AudioAssets>,
-    mut audio_event: EventWriter<AudioEvent>,
+    mut audio_event: MessageWriter<AudioEvent>,
 ) {
-    let mut bird = bird.single_mut();
-
     if keys.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
-        audio_event.send(AudioEvent::new(&audio_assets.wing, false));
+        audio_event.write(AudioEvent::new(&audio_assets.wing, false));
 
         bird.velocity = Bird::DEFAULT_VELOCITY;
         bird.rotation = 25f32.to_radians();
     }
 
     if keys.just_released(KeyCode::Space) || buttons.just_released(MouseButton::Left) {
-        audio_event.send(AudioEvent::new(&audio_assets.swoosh, false));
+        audio_event.write(AudioEvent::new(&audio_assets.swoosh, false));
     }
 }
 
-fn flap(time: Res<Time>, mut bird: Query<(&mut FlapAnimation, &mut Handle<Image>), With<Bird>>) {
-    let (mut animation, mut texture) = bird.single_mut();
+fn flap(time: Res<Time>, bird: Single<(&mut FlapAnimation, &mut Sprite), With<Bird>>) {
+    let (mut animation, mut sprite) = bird.into_inner();
 
     animation.timer.tick(time.delta());
 
     if animation.timer.just_finished() {
         animation.current_frame = (animation.current_frame + 1) % 3;
-        *texture = animation.frames[animation.current_frame].clone();
+        sprite.image = animation.frames[animation.current_frame].clone();
     }
 }
 
-fn bounce_vertical(
-    time: Res<Time>,
-    mut bird: Query<(&mut Transform, &mut BouncingAnimation, &Bird)>,
-) {
-    let (mut transform, mut bouncing_animation, bird) = bird.single_mut();
+fn bounce_vertical(time: Res<Time>, bird: Single<(&mut Transform, &mut BouncingAnimation, &Bird)>) {
+    let (mut transform, mut bouncing_animation, bird) = bird.into_inner();
 
     bouncing_animation.phase += 0.16 * frames(&time);
 

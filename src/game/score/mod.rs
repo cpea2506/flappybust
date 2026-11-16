@@ -5,7 +5,7 @@ use super::{
     game_over::events::ScoreboardDisplayed, pipe::components::Pipe,
 };
 use crate::SCREEN_HEIGHT;
-use bevy::{prelude::*, sprite::Anchor::TopCenter};
+use bevy::{prelude::*, sprite::Anchor};
 use components::*;
 use flappybust::{BasicMath, Switcher, despawn};
 use itertools::Itertools;
@@ -38,116 +38,66 @@ fn spawn_current_score(
         ..*prev_score
     };
 
-    commands
-        .spawn(SpriteBundle {
-            transform: Transform::from_xyz(0f32, SCREEN_HEIGHT.half(), 0.2),
+    commands.spawn((
+        Text2d::new(score.current.to_string()),
+        // Bevy 0.15 text renders 1.2x larger, so scale down to keep the old size.
+        TextFont {
+            font: font_assets.teko_bold.clone().into(),
+            font_size: FontSize::Px(64f32 / 1.2),
             ..default()
-        })
-        .with_children(|builder| {
-            builder.spawn((
-                Text2dBundle {
-                    text: Text::from_section(
-                        score.current.to_string(),
-                        TextStyle {
-                            font: font_assets.teko_bold.clone(),
-                            font_size: 64f32,
-                            ..default()
-                        },
-                    )
-                    .with_justify(JustifyText::Center),
-                    text_anchor: TopCenter,
-                    ..default()
-                },
-                CurrentScore,
-            ));
-        });
+        },
+        TextLayout::justify(Justify::Center),
+        Anchor::TOP_CENTER,
+        Transform::from_xyz(0f32, SCREEN_HEIGHT.half(), 0.2),
+        CurrentScore,
+    ));
 
     commands.insert_resource(score);
 }
 
 fn display_current_score(
     score: Res<Score>,
-    mut current_score: Query<&mut Text, With<CurrentScore>>,
+    mut current_score: Single<&mut Text2d, With<CurrentScore>>,
 ) {
-    let mut current_score = current_score.single_mut();
-
-    for section in &mut current_score.sections {
-        section.value = score.current.to_string();
-    }
+    current_score.0 = score.current.to_string();
 }
 
 fn display_scoreboard_score(
     mut commands: Commands,
     score: Res<Score>,
     font_assets: Res<FontAssets>,
-    mut scoreboard_displayed: EventReader<ScoreboardDisplayed>,
+    mut scoreboard_displayed: MessageReader<ScoreboardDisplayed>,
 ) {
     if scoreboard_displayed.is_empty() {
         return;
     }
 
-    let text_style = TextStyle {
-        font: font_assets.teko_bold.clone(),
-        font_size: 40f32,
+    let text_font = TextFont {
+        font: font_assets.teko_bold.clone().into(),
+        font_size: FontSize::Px(40f32 / 1.2),
         ..default()
     };
 
-    let box_size = Vec2::new(68f32, 20f32);
-
-    commands
-        .spawn(SpriteBundle {
-            transform: Transform::from_xyz(63.8f32, 67f32, 0.3),
-            sprite: Sprite {
-                color: Color::NONE,
-                custom_size: Some(box_size),
-                ..default()
-            },
-            ..default()
-        })
-        .with_children(|builder| {
-            builder.spawn((
-                Text2dBundle {
-                    text: Text::from_section(score.current.to_string(), text_style.clone())
-                        .with_justify(JustifyText::Center),
-                    ..default()
-                },
-                ScoreboardScore,
-            ));
-        });
-
-    commands
-        .spawn(SpriteBundle {
-            transform: Transform::from_xyz(63.8f32, 18f32, 0.3),
-            sprite: Sprite {
-                color: Color::NONE,
-                custom_size: Some(box_size),
-                ..default()
-            },
-            ..default()
-        })
-        .with_children(|builder| {
-            builder.spawn((
-                Text2dBundle {
-                    text: Text::from_section(score.highest.to_string(), text_style)
-                        .with_justify(JustifyText::Center),
-                    ..default()
-                },
-                ScoreboardScore,
-            ));
-        });
+    for (value, y) in [(score.current, 67f32), (score.highest, 18f32)] {
+        commands.spawn((
+            Text2d::new(value.to_string()),
+            text_font.clone(),
+            TextLayout::justify(Justify::Center),
+            Transform::from_xyz(63.8f32, y, 0.3),
+            ScoreboardScore,
+        ));
+    }
 
     scoreboard_displayed.clear();
 }
 
 fn record(
     audio_assets: Res<AudioAssets>,
-    mut audio_event: EventWriter<AudioEvent>,
-    bird: Query<&Transform, With<Bird>>,
+    mut audio_event: MessageWriter<AudioEvent>,
+    bird_transform: Single<&Transform, With<Bird>>,
     mut pipe: Query<(&mut Pipe, &Transform)>,
     mut score: ResMut<Score>,
 ) {
-    let bird_transform = bird.single();
-
     for ((mut pipe, pipe_transform), _) in pipe.iter_mut().tuples() {
         // Increase score each time the bird has passed the pipe.
         if bird_transform.translation.x + Bird::WIDTH.half() > pipe_transform.translation.x
@@ -156,7 +106,7 @@ fn record(
             score.current += 1;
             score.highest = score.current.max(score.highest);
 
-            audio_event.send(AudioEvent::new(&audio_assets.score, false));
+            audio_event.write(AudioEvent::new(&audio_assets.score, false));
 
             // Prevent the score from increasing twice on frame changing too fast.
             pipe.hidden.on();

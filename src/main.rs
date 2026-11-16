@@ -1,10 +1,6 @@
 mod game;
 
-use bevy::{
-    asset::AssetMetaCheck,
-    prelude::*,
-    window::{PrimaryWindow, close_on_esc},
-};
+use bevy::{asset::AssetMetaCheck, prelude::*, window::PrimaryWindow};
 use game::{GamePlugin, game_over::events::RestartButtonDisplayed};
 
 const SCREEN_WIDTH: f32 = 288f32;
@@ -24,16 +20,20 @@ fn main() {
     let mut app = App::new();
 
     app.init_state::<GameState>()
-        .insert_resource(AssetMetaCheck::Never)
         .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "Flappybust 🦀🦋".to_string(),
-                    resolution: (SCREEN_WIDTH, SCREEN_HEIGHT).into(),
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Flappybust 🦀🦋".to_string(),
+                        resolution: (SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32).into(),
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(AssetPlugin {
+                    meta_check: AssetMetaCheck::Never,
                     ..default()
                 }),
-                ..default()
-            }),
             GamePlugin,
         ))
         .add_systems(Startup, setup_camera)
@@ -49,7 +49,7 @@ fn main() {
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 }
 
 fn start_game(
@@ -66,8 +66,8 @@ fn restart_game(
     key: Res<ButtonInput<KeyCode>>,
     mouse: Res<ButtonInput<MouseButton>>,
     mut next_state: ResMut<NextState<GameState>>,
-    window: Query<&Window, With<PrimaryWindow>>,
-    restart_btn_displayed: EventReader<RestartButtonDisplayed>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    restart_btn_displayed: MessageReader<RestartButtonDisplayed>,
 ) {
     if restart_btn_displayed.is_empty() {
         return;
@@ -78,7 +78,7 @@ fn restart_game(
     }
 
     if mouse.just_pressed(MouseButton::Left)
-        && let Some(cursor) = window.single().cursor_position()
+        && let Some(cursor) = window.cursor_position()
         // The cursor must be inside restart btn area.
         && cursor.y > 273f32
         && cursor.y < 310f32
@@ -86,5 +86,18 @@ fn restart_game(
         && cursor.x < 200f32
     {
         next_state.set(GameState::Ready);
+    }
+}
+
+/// Close the focused window on Escape (removed from Bevy in 0.14).
+fn close_on_esc(
+    mut commands: Commands,
+    windows: Query<(Entity, &Window)>,
+    input: Res<ButtonInput<KeyCode>>,
+) {
+    for (entity, window) in &windows {
+        if window.focused && input.just_pressed(KeyCode::Escape) {
+            commands.entity(entity).despawn();
+        }
     }
 }

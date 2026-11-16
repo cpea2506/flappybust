@@ -1,4 +1,4 @@
 use bevy::prelude::*;
 
-#[derive(Event, Default)]
+#[derive(Message, Default)]
 pub struct CollisionEvent;

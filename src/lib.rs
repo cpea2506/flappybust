@@ -71,7 +71,7 @@ pub macro ternary($condition:expr, $then:expr, $else:expr) {
 ///
 /// Multiply per-frame speeds by this so gameplay runs the same at any frame rate.
 pub fn frames(time: &Time) -> f32 {
-    time.delta_seconds() * 60.0
+    time.delta_secs() * 60.0
 }
 
 /// Despawn entity that has specified components in the world.

@@ -15,13 +15,10 @@ impl Background {
     }
 
     #[inline]
-    pub fn generate_bundle(self, texture: &Handle<Image>) -> (SpriteBundle, Self) {
+    pub fn generate_bundle(self, texture: &Handle<Image>) -> (Sprite, Transform, Self) {
         (
-            SpriteBundle {
-                texture: texture.clone(),
-                transform: Transform::from_translation(self.translation),
-                ..default()
-            },
+            Sprite::from_image(texture.clone()),
+            Transform::from_translation(self.translation),
             self,
         )
     }

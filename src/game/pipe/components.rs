@@ -4,7 +4,7 @@ use crate::{
 };
 use bevy::prelude::*;
 use flappybust::{ternary, BasicMath};
-use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
+use rand::random_range;
 
 #[derive(Component, Default)]
 pub struct Pipe {
@@ -29,17 +29,14 @@ impl Pipe {
         }
     }
 
-    fn generate_bundle(self, texture: &Handle<Image>) -> (SpriteBundle, Self) {
+    fn generate_bundle(self, texture: &Handle<Image>) -> (Sprite, Transform, Self) {
         (
-            SpriteBundle {
-                sprite: Sprite {
-                    flip_y: self.flip_y,
-                    ..default()
-                },
-                texture: texture.clone(),
-                transform: Transform::from_translation(self.translation),
+            Sprite {
+                image: texture.clone(),
+                flip_y: self.flip_y,
                 ..default()
             },
+            Transform::from_translation(self.translation),
             self,
         )
     }
@@ -58,16 +55,13 @@ impl Pipe {
             DateTime::Night => image_assets.red_pipe.clone(),
         };
 
-        let mut rng = thread_rng();
-        let y_between = Uniform::new(-240f32, -50f32);
-
         // Spawn first 2 pipes.
         (0..num_pipe).for_each(|i| {
             let pipe = Self::new(
                 ternary!(first_time, SCREEN_WIDTH, SCREEN_WIDTH.half())
                     + Self::WIDTH.half()
                     + 175f32 * i as f32,
-                y_between.sample(&mut rng),
+                random_range(-240f32..-50f32),
                 false,
             );
             let flipped_pipe = Self::new(
