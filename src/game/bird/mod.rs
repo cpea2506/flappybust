@@ -131,17 +131,24 @@ fn fly(
     mut bird: Single<&mut Bird>,
     keys: Res<ButtonInput<KeyCode>>,
     buttons: Res<ButtonInput<MouseButton>>,
+    touches: Res<Touches>,
     audio_assets: Res<AudioAssets>,
     mut audio_event: MessageWriter<AudioEvent>,
 ) {
-    if keys.just_pressed(KeyCode::Space) || buttons.just_pressed(MouseButton::Left) {
+    if keys.just_pressed(KeyCode::Space)
+        || buttons.just_pressed(MouseButton::Left)
+        || touches.any_just_pressed()
+    {
         audio_event.write(AudioEvent::new(&audio_assets.wing, false));
 
         bird.velocity = Bird::DEFAULT_VELOCITY;
         bird.rotation = 25f32.to_radians();
     }
 
-    if keys.just_released(KeyCode::Space) || buttons.just_released(MouseButton::Left) {
+    if keys.just_released(KeyCode::Space)
+        || buttons.just_released(MouseButton::Left)
+        || touches.any_just_released()
+    {
         audio_event.write(AudioEvent::new(&audio_assets.swoosh, false));
     }
 }

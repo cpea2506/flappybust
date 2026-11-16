@@ -75,9 +75,13 @@ fn play_ambient_music(mut audio_event: MessageWriter<AudioEvent>, audio_assets: 
 fn start_game(
     key: Res<ButtonInput<KeyCode>>,
     mouse: Res<ButtonInput<MouseButton>>,
+    touches: Res<Touches>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    if key.just_pressed(KeyCode::Space) || mouse.just_pressed(MouseButton::Left) {
+    if key.just_pressed(KeyCode::Space)
+        || mouse.just_pressed(MouseButton::Left)
+        || touches.any_just_pressed()
+    {
         next_state.set(GameState::Playing);
     }
 }

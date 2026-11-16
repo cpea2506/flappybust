@@ -183,9 +183,11 @@ fn scale_medal(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn restart_game(
     key: Res<ButtonInput<KeyCode>>,
     mouse: Res<ButtonInput<MouseButton>>,
+    touches: Res<Touches>,
     mut next_state: ResMut<NextState<GameState>>,
     window: Single<&Window, With<PrimaryWindow>>,
     camera: Single<(&Camera, &GlobalTransform)>,
@@ -197,14 +199,18 @@ fn restart_game(
     }
 
     let (camera, camera_transform) = *camera;
-    let clicked_btn = mouse.just_pressed(MouseButton::Left)
-        && window
-            .cursor_position()
-            .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor).ok())
-            .is_some_and(|cursor| {
-                Rect::from_center_size(restart_btn.translation.truncate(), RestartButton::SIZE)
-                    .contains(cursor)
-            });
+    let btn_area = Rect::from_center_size(restart_btn.translation.truncate(), RestartButton::SIZE);
+    // Where the mouse was clicked or a finger touched down this frame.
+    let mut presses = window
+        .cursor_position()
+        .filter(|_| mouse.just_pressed(MouseButton::Left))
+        .into_iter()
+        .chain(touches.iter_just_pressed().map(|touch| touch.position()));
+    let clicked_btn = presses.any(|press| {
+        camera
+            .viewport_to_world_2d(camera_transform, press)
+            .is_ok_and(|press| btn_area.contains(press))
+    });
 
     if key.just_pressed(KeyCode::Space) || clicked_btn {
         next_state.set(GameState::Ready);
