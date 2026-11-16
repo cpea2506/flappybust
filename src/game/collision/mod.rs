@@ -11,6 +11,7 @@ use crate::GameState;
 use bevy::{
     prelude::*,
     shape::{Aabb2d, IntersectsVolume},
+    transform::TransformSystems,
 };
 use events::CollisionEvent;
 
@@ -19,14 +20,18 @@ pub struct CollisionPlugin;
 
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
+        // Run after all `Update` movement so collisions use this frame's positions,
+        // but before transforms propagate so landing on the base renders this frame.
         app.add_message::<CollisionEvent>().add_systems(
-            Update,
+            PostUpdate,
             (
                 check_collision
                     .run_if(not(in_state(GameState::Ready)))
                     .run_if(not(in_state(GameState::AssetLoading))),
                 on_collision.run_if(in_state(GameState::Playing)),
-            ),
+            )
+                .chain()
+                .before(TransformSystems::Propagate),
         );
     }
 }
