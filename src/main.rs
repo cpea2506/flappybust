@@ -26,36 +26,42 @@ pub enum GameState {
 }
 
 fn main() {
-    App::new()
-        .add_plugins(
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: "Flappybust 🦀🦋".to_string(),
-                        resolution: (SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32).into(),
-                        ..default()
-                    }),
-                    ..default()
-                })
-                .set(AssetPlugin {
-                    meta_check: AssetMetaCheck::Never,
+    let mut app = App::new();
+
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Flappybust 🦀🦋".to_string(),
+                    resolution: (SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32).into(),
                     ..default()
                 }),
-        )
-        // Needs the state schedules from `DefaultPlugins`, and must exist before `GamePlugin`.
-        .init_state::<GameState>()
-        .add_plugins(GamePlugin)
-        .add_systems(Startup, setup_camera)
-        .add_systems(First, snap_frame_time.before(TimeSystems))
-        .add_systems(Update, close_on_esc)
-        .run();
+                ..default()
+            })
+            .set(AssetPlugin {
+                meta_check: AssetMetaCheck::Never,
+                ..default()
+            }),
+    )
+    .init_state::<GameState>()
+    .add_plugins(GamePlugin)
+    .add_systems(Startup, setup_camera)
+    .add_systems(First, snap_frame_time.before(TimeSystems));
+
+    #[cfg(not(target_arch = "wasm32"))]
+    app.add_systems(Update, close_on_esc);
+
+    app.run();
 }
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
 }
 
-/// Close the focused window on Escape (removed from Bevy in 0.14).
+/// Close the focused window on Escape.
+///
+/// Not on the web, where closing the window only freezes the game on the page.
+#[cfg(not(target_arch = "wasm32"))]
 fn close_on_esc(
     mut commands: Commands,
     windows: Query<(Entity, &Window)>,
