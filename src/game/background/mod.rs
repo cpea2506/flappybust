@@ -1,7 +1,7 @@
 automod::dir!("src/game/background");
 
 use super::{DateTime, ImageAssets, layer};
-use crate::{GameState, SCREEN_WIDTH};
+use crate::GameState;
 use bevy::prelude::*;
 use components::Background;
 use flappybust::Scroll;
@@ -17,13 +17,13 @@ impl Plugin for BackgroundPlugin {
 }
 
 fn spawn(mut commands: Commands) {
-    for x in [0f32, SCREEN_WIDTH] {
+    for x in [0f32, Background::PERIOD] {
         commands.spawn((
             Sprite::default(),
             Transform::from_xyz(x, 0f32, layer::BACKGROUND),
             Scroll {
                 speed: Background::SPEED,
-                period: SCREEN_WIDTH,
+                period: Background::PERIOD,
             },
             Background,
         ));
