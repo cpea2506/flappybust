@@ -48,19 +48,22 @@ impl Bird {
     /// Height of a bird lying on the base, dead.
     pub const GROUND_Y: f32 = Base::TOP + Self::HEIGHT / 2.0;
     pub const FLAP_FRAME_SECS: f32 = 0.12;
-    /// Nose-up angle after a flap, and the highest it can point.
-    pub const MAX_ROTATION: f32 = 25f32.to_radians();
+    /// Angle set by a flap. Above `MAX_ROTATION`, so the bird holds its nose up
+    /// for a moment before it starts to dive.
+    pub const FLAP_ROTATION: f32 = 45f32.to_radians();
+    /// The highest the bird visibly points.
+    pub const MAX_ROTATION: f32 = 20f32.to_radians();
     /// Straight down, the lowest it can point.
     pub const MIN_ROTATION: f32 = -90f32.to_radians();
     /// Radians turned nose-down per frame.
-    pub const ROTATION_SPEED: f32 = 1f32 / 40f32;
+    pub const ROTATION_SPEED: f32 = 3f32.to_radians();
 }
 
 impl Default for Bird {
     fn default() -> Self {
         Bird {
             velocity: Self::DEFAULT_VELOCITY,
-            rotation: Self::MAX_ROTATION,
+            rotation: Self::FLAP_ROTATION,
         }
     }
 }

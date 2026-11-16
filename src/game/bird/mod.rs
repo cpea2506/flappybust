@@ -98,13 +98,12 @@ fn fall(time: Res<Time>, bird: Single<(&mut Bird, &mut Transform)>) {
 
     let frames = frames(&time);
 
-    bird.rotation = (bird.rotation - Bird::ROTATION_SPEED * frames)
-        .clamp(Bird::MIN_ROTATION, Bird::MAX_ROTATION);
+    bird.rotation = (bird.rotation - Bird::ROTATION_SPEED * frames).max(Bird::MIN_ROTATION);
     bird.velocity = (bird.velocity + Bird::GRAVITY * frames).min(Bird::MAX_VELOCITY);
 
     transform.translation.y =
         (transform.translation.y - bird.velocity * frames).max(Bird::GROUND_Y);
-    transform.rotation = Quat::from_rotation_z(bird.rotation);
+    transform.rotation = Quat::from_rotation_z(bird.rotation.min(Bird::MAX_ROTATION));
 }
 
 fn fly(
@@ -122,7 +121,7 @@ fn fly(
         commands.spawn(sound(&audio_assets.wing));
 
         bird.velocity = Bird::DEFAULT_VELOCITY;
-        bird.rotation = Bird::MAX_ROTATION;
+        bird.rotation = Bird::FLAP_ROTATION;
     }
 
     if keys.just_released(KeyCode::Space)
