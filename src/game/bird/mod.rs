@@ -26,7 +26,8 @@ impl Plugin for BirdPlugin {
                         flap.run_if(not(in_state(GameState::Over))),
                     )
                         .run_if(not(in_state(GameState::AssetLoading))),
-                    fly.run_if(in_state(GameState::Playing)),
+                    // Flap before falling so a press moves the bird up this frame, not the next.
+                    fly.run_if(in_state(GameState::Playing)).before(fall),
                     bird_soul_fly.run_if(in_state(GameState::Over)),
                 ),
             )
