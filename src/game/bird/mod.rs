@@ -7,7 +7,7 @@ use super::{
 use crate::GameOverPhase;
 use bevy::{
     prelude::*,
-    shape::{Aabb2d, IntersectsVolume},
+    shape::{Aabb2d, BoundingCircle, IntersectsVolume},
 };
 use components::*;
 use flappybust::{frames, sound};
@@ -165,11 +165,11 @@ fn collide(
     mut next_state: ResMut<NextState<GameState>>,
     audio_assets: Res<AudioAssets>,
 ) {
-    let bird_box = bird_box(&bird);
+    let bird_circle = bird_circle(&bird);
     let pipe_half_size = Vec2::new(Pipe::WIDTH, Pipe::HEIGHT) / 2.0;
     let hit_pipe = pipes
         .iter()
-        .any(|pipe| bird_box.intersects(&Aabb2d::new(pipe.translation.truncate(), pipe_half_size)));
+        .any(|pipe| bird_circle.intersects(&Aabb2d::new(pipe.translation.truncate(), pipe_half_size)));
 
     if bird.translation.y <= Bird::GROUND_Y || hit_pipe {
         commands.spawn(sound(&audio_assets.die));
@@ -184,22 +184,19 @@ fn collect_coin(
     bird: Single<&Transform, With<Bird>>,
     coins: Query<(Entity, &Transform), With<Coin>>,
 ) {
-    let bird_box = bird_box(&bird);
-    let coin_half_size = Vec2::splat(Coin::SIZE / 2.0);
+    let bird_circle = bird_circle(&bird);
 
     for (coin, transform) in &coins {
-        if bird_box.intersects(&Aabb2d::new(
+        if bird_circle.intersects(&BoundingCircle::new(
             transform.translation.truncate(),
-            coin_half_size,
+            Coin::SIZE / 2.0,
         )) {
             commands.entity(coin).despawn();
         }
     }
 }
 
-fn bird_box(transform: &Transform) -> Aabb2d {
-    Aabb2d::new(
-        transform.translation.truncate(),
-        Vec2::new(Bird::WIDTH, Bird::HEIGHT) / 2.0,
-    )
+/// A circle fits the round bird at any rotation, unlike a box.
+fn bird_circle(transform: &Transform) -> BoundingCircle {
+    BoundingCircle::new(transform.translation.truncate(), Bird::HEIGHT / 2.0)
 }
