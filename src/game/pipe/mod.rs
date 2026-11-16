@@ -6,6 +6,9 @@ use bevy::prelude::*;
 use components::Pipe;
 use flappybust::{despawn, frames};
 
+// A respawned pair must start off screen.
+const _: () = assert!(Pipe::PAIRS as f32 * Pipe::SPACING >= SCREEN_WIDTH + Pipe::WIDTH);
+
 /// Pipe logic.
 pub struct PipePlugin;
 
@@ -20,7 +23,7 @@ impl Plugin for PipePlugin {
 fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>, datetime: Res<DateTime>) {
     let texture = image_assets.pipe(*datetime);
 
-    for i in 0..2 {
+    for i in 0..Pipe::PAIRS {
         let x = SCREEN_WIDTH + Pipe::WIDTH / 2.0 + Pipe::SPACING * i as f32;
         Pipe::spawn_pair(&mut commands, texture, x);
     }
@@ -43,7 +46,7 @@ fn moving(
             commands.entity(entity).despawn();
 
             if !pipe.flip_y {
-                let x = transform.translation.x + 2.0 * Pipe::SPACING;
+                let x = transform.translation.x + Pipe::PAIRS as f32 * Pipe::SPACING;
                 Pipe::spawn_pair(&mut commands, image_assets.pipe(*datetime), x);
             }
         }
