@@ -64,18 +64,12 @@ impl Plugin for GamePlugin {
             .add_systems(Update, start_game.run_if(in_state(GameState::Ready)))
             .add_systems(OnEnter(GameState::Playing), play_ambient_music)
             .add_systems(Update, scroll.run_if(not(in_state(GameState::Over))))
-            .add_systems(OnExit(GameState::Over), (init_datetime, stop_all_songs));
+            .add_systems(OnExit(GameState::Over), init_datetime);
     }
 }
 
 fn init_datetime(mut commands: Commands) {
     commands.insert_resource(DateTime::default())
-}
-
-fn stop_all_songs(audio_sinks: Query<&AudioSink>) {
-    for sink in &audio_sinks {
-        sink.stop();
-    }
 }
 
 fn spawn_ready_message(mut commands: Commands, image_assets: Res<ImageAssets>) {

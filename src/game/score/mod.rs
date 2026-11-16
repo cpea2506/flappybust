@@ -8,10 +8,8 @@ use bevy::{camera::visibility::NoFrustumCulling, prelude::*, sprite::Anchor};
 use components::*;
 use flappybust::sound;
 
-/// Bevy 0.15 text renders 1.2x larger, so font sizes are scaled down to keep the old size.
-const TEXT_SCALE: f32 = 1.2;
-const CURRENT_SCORE_FONT_SIZE: f32 = 64f32 / TEXT_SCALE;
-const SCOREBOARD_FONT_SIZE: f32 = 40f32 / TEXT_SCALE;
+const CURRENT_SCORE_FONT_SIZE: f32 = 53.3;
+const SCOREBOARD_FONT_SIZE: f32 = 33.3;
 /// Right edge of the scoreboard scores, aligned with the "SCORE" and "BEST" labels.
 const SCOREBOARD_SCORE_RIGHT: f32 = 100f32;
 const SCOREBOARD_CURRENT_Y: f32 = 65.5;
