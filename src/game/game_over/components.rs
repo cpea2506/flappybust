@@ -7,7 +7,7 @@ impl Medal {
     pub const POSITION: Vec2 = Vec2::new(-65f32, 47f32);
     /// Scale the medal starts at before shrinking into place.
     pub const START_SCALE: f32 = 25f32;
-    /// Scale lost per 60 FPS frame.
+    /// Scale lost per frame.
     pub const SHRINK_SPEED: f32 = 2f32;
 }
 

@@ -13,7 +13,7 @@ use base::BasePlugin;
 use bevy::{audio::Volume, prelude::*};
 use bevy_asset_loader::prelude::*;
 use bird::BirdPlugin;
-use flappybust::{BASE_FPS, flap_pressed, interpolate_position, save_previous_position, scroll};
+use flappybust::scroll;
 use game_over::GameOverPlugin;
 use pipe::PipePlugin;
 pub use resources::*;
@@ -42,12 +42,6 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DateTime>()
-            .insert_resource(Time::<Fixed>::from_hz(BASE_FPS.into()))
-            .add_systems(FixedFirst, save_previous_position)
-            .add_systems(
-                RunFixedMainLoop,
-                interpolate_position.in_set(RunFixedMainLoopSystems::AfterFixedMainLoop),
-            )
             .add_loading_state(
                 LoadingState::new(GameState::AssetLoading)
                     .continue_to_state(GameState::Ready)
@@ -67,14 +61,9 @@ impl Plugin for GamePlugin {
                 GameOverPlugin,
             ))
             .add_systems(OnEnter(GameState::Ready), spawn_ready_message)
-            .add_systems(
-                Update,
-                start_game
-                    .run_if(in_state(GameState::Ready))
-                    .run_if(flap_pressed),
-            )
+            .add_systems(Update, start_game.run_if(in_state(GameState::Ready)))
             .add_systems(OnEnter(GameState::Playing), play_ambient_music)
-            .add_systems(FixedUpdate, scroll.run_if(not(in_state(GameState::Over))))
+            .add_systems(Update, scroll.run_if(not(in_state(GameState::Over))))
             .add_systems(OnExit(GameState::Over), init_datetime);
     }
 }
@@ -99,6 +88,16 @@ fn play_ambient_music(mut commands: Commands, audio_assets: Res<AudioAssets>) {
     ));
 }
 
-fn start_game(mut next_state: ResMut<NextState<GameState>>) {
-    next_state.set(GameState::Playing);
+fn start_game(
+    key: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    touches: Res<Touches>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if key.just_pressed(KeyCode::Space)
+        || mouse.just_pressed(MouseButton::Left)
+        || touches.any_just_pressed()
+    {
+        next_state.set(GameState::Playing);
+    }
 }
