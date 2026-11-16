@@ -34,6 +34,7 @@ fn main() {
                 primary_window: Some(Window {
                     title: "Flappybust 🦀🦋".to_string(),
                     resolution: (SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32).into(),
+                    resizable: false,
                     ..default()
                 }),
                 ..default()
