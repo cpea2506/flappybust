@@ -65,9 +65,11 @@ fn display_scoreboard_score(
     mut commands: Commands,
     score: Res<Score>,
     font_assets: Res<FontAssets>,
-    mut scoreboard_displayed: MessageReader<ScoreboardDisplayed>,
+    scoreboard_displayed: MessageReader<ScoreboardDisplayed>,
+    spawned: Query<(), With<ScoreboardScore>>,
 ) {
-    if scoreboard_displayed.is_empty() {
+    // The scoreboard reports itself displayed every frame, so only spawn once.
+    if scoreboard_displayed.is_empty() || !spawned.is_empty() {
         return;
     }
 
@@ -86,8 +88,6 @@ fn display_scoreboard_score(
             ScoreboardScore,
         ));
     }
-
-    scoreboard_displayed.clear();
 }
 
 fn record(
