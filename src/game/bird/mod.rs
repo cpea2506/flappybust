@@ -167,9 +167,9 @@ fn collide(
 ) {
     let bird_circle = bird_circle(&bird);
     let pipe_half_size = Vec2::new(Pipe::WIDTH, Pipe::HEIGHT) / 2.0;
-    let hit_pipe = pipes
-        .iter()
-        .any(|pipe| bird_circle.intersects(&Aabb2d::new(pipe.translation.truncate(), pipe_half_size)));
+    let hit_pipe = pipes.iter().any(|pipe| {
+        bird_circle.intersects(&Aabb2d::new(pipe.translation.truncate(), pipe_half_size))
+    });
 
     if bird.translation.y <= Bird::GROUND_Y || hit_pipe {
         commands.spawn(sound(&audio_assets.die));
