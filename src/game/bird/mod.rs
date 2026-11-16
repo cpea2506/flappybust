@@ -182,6 +182,7 @@ fn collect_coin(
     mut commands: Commands,
     bird: Single<&Transform, With<Bird>>,
     coins: Query<(Entity, &Transform), With<Coin>>,
+    audio_assets: Res<AudioAssets>,
 ) {
     let bird_circle = bird_circle(&bird);
 
@@ -191,6 +192,10 @@ fn collect_coin(
             Coin::SIZE / 2.0,
         )) {
             commands.entity(coin).despawn();
+            commands.spawn((
+                AudioPlayer::new(audio_assets.ding.clone()),
+                PlaybackSettings::DESPAWN.with_speed(1.5),
+            ));
         }
     }
 }
