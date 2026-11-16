@@ -1,5 +1,5 @@
 [alias]
-watch_dynamic = "watch -i assets -cx run --features bevy/dynamic"
+watch_dynamic = ["watch", "-i", "assets", "-c", "-x", "run --features bevy/dynamic_linking"]
 run_wasm = "run --target wasm32-unknown-unknown"
 
 [target.wasm32-unknown-unknown]
