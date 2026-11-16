@@ -15,8 +15,8 @@ pub struct Pipe {
 impl Pipe {
     pub const WIDTH: f32 = 52f32;
     pub const HEIGHT: f32 = 320f32;
-    // Gap, spacing and gap height range match the original Flappy Bird (via FlapPyBird).
-    const GAP: f32 = 100f32;
+    // Spacing and gap height range.
+    const GAP: f32 = 85f32;
     /// Horizontal distance between two pipe pairs.
     pub(super) const SPACING: f32 = 144f32;
     /// Pairs alive at once: enough to span the screen plus a pipe, so respawns start off screen.
