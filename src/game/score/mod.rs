@@ -7,8 +7,7 @@ use super::{
 use crate::SCREEN_HEIGHT;
 use bevy::{prelude::*, sprite::Anchor};
 use components::*;
-use flappybust::{BasicMath, Switcher, despawn};
-use itertools::Itertools;
+use flappybust::despawn;
 
 pub struct ScorePlugin;
 
@@ -48,7 +47,7 @@ fn spawn_current_score(
         },
         TextLayout::justify(Justify::Center),
         Anchor::TOP_CENTER,
-        Transform::from_xyz(0f32, SCREEN_HEIGHT.half(), 0.2),
+        Transform::from_xyz(0f32, SCREEN_HEIGHT / 2.0, 0.2),
         CurrentScore,
     ));
 
@@ -95,23 +94,20 @@ fn record(
     audio_assets: Res<AudioAssets>,
     mut audio_event: MessageWriter<AudioEvent>,
     bird_transform: Single<&Transform, With<Bird>>,
-    mut pipe: Query<(&mut Pipe, &Transform)>,
+    mut pipes: Query<(&mut Pipe, &Transform)>,
     mut score: ResMut<Score>,
 ) {
-    for ((mut pipe, pipe_transform), _) in pipe.iter_mut().tuples() {
-        // Increase score each time the bird has passed the pipe.
-        if bird_transform.translation.x + Bird::WIDTH.half() > pipe_transform.translation.x
-            && !pipe.hidden
+    for (mut pipe, pipe_transform) in &mut pipes {
+        // Increase score each time the bird has passed a pipe pair (counted on the lower pipe).
+        if !pipe.flip_y
+            && !pipe.scored
+            && bird_transform.translation.x + Bird::WIDTH / 2.0 > pipe_transform.translation.x
         {
             score.current += 1;
             score.highest = score.current.max(score.highest);
+            pipe.scored = true;
 
             audio_event.write(AudioEvent::new(&audio_assets.score, false));
-
-            // Prevent the score from increasing twice on frame changing too fast.
-            pipe.hidden.on();
-
-            break;
         }
     }
 }

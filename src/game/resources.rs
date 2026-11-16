@@ -87,6 +87,15 @@ impl Distribution<DateTime> for StandardUniform {
     }
 }
 
+impl ImageAssets {
+    pub fn pipe(&self, datetime: DateTime) -> &Handle<Image> {
+        match datetime {
+            DateTime::Day => &self.green_pipe,
+            DateTime::Night => &self.red_pipe,
+        }
+    }
+}
+
 impl Default for DateTime {
     fn default() -> Self {
         random::<Self>()

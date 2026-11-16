@@ -4,8 +4,7 @@ use super::{DateTime, ImageAssets};
 use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use components::Pipe;
-use flappybust::{BasicMath, despawn, frames};
-use itertools::Itertools;
+use flappybust::{despawn, frames};
 
 /// Pipe logic.
 pub struct PipePlugin;
@@ -17,33 +16,36 @@ impl Plugin for PipePlugin {
             .add_systems(OnExit(GameState::Over), despawn::<Pipe>);
     }
 }
+
 fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>, datetime: Res<DateTime>) {
-    Pipe::genrate_self(2, true, &mut commands, &image_assets, &datetime);
+    let texture = image_assets.pipe(*datetime);
+
+    for i in 0..2 {
+        let x = SCREEN_WIDTH + Pipe::WIDTH / 2.0 + Pipe::SPACING * i as f32;
+        Pipe::spawn_pair(&mut commands, texture, x);
+    }
 }
 
 fn moving(
     mut commands: Commands,
-    mut pipe: Query<(Entity, &mut Transform), With<Pipe>>,
+    mut pipes: Query<(Entity, &Pipe, &mut Transform)>,
     image_assets: Res<ImageAssets>,
     datetime: Res<DateTime>,
     time: Res<Time>,
 ) {
-    let half_pipe_width = Pipe::WIDTH.half();
-    let half_screen_width = SCREEN_WIDTH.half();
     let distance = frames(&time);
 
-    for ((pipe_entity, mut pipe_transform), (flipped_pipe_entity, mut flipped_pipe_transform)) in
-        pipe.iter_mut().tuples()
-    {
-        pipe_transform.translation.x -= distance;
-        flipped_pipe_transform.translation.x -= distance;
+    for (entity, pipe, mut transform) in &mut pipes {
+        transform.translation.x -= distance;
 
-        // Remove pipes that are outside of screen.
-        if pipe_transform.translation.x <= -half_pipe_width - half_screen_width {
-            Pipe::genrate_self(1, false, &mut commands, &image_assets, &datetime);
+        // Remove pipes that are outside of screen and queue a new pair behind the last one.
+        if transform.translation.x <= -(SCREEN_WIDTH + Pipe::WIDTH) / 2.0 {
+            commands.entity(entity).despawn();
 
-            commands.entity(pipe_entity).despawn();
-            commands.entity(flipped_pipe_entity).despawn();
+            if !pipe.flip_y {
+                let x = transform.translation.x + 2.0 * Pipe::SPACING;
+                Pipe::spawn_pair(&mut commands, image_assets.pipe(*datetime), x);
+            }
         }
     }
 }

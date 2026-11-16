@@ -2731,7 +2731,6 @@ dependencies = [
  "automod",
  "bevy",
  "bevy_asset_loader",
- "itertools 0.15.0",
  "rand",
 ]
 

@@ -13,8 +13,6 @@ use bevy::{
     shape::{Aabb2d, IntersectsVolume},
 };
 use events::CollisionEvent;
-use flappybust::BasicMath;
-use itertools::Itertools;
 
 /// Collision logic.
 pub struct CollisionPlugin;
@@ -35,7 +33,7 @@ impl Plugin for CollisionPlugin {
 
 fn check_collision(
     mut bird_transform: Single<&mut Transform, With<Bird>>,
-    pipes: Query<(&Transform, &Pipe), Without<Bird>>,
+    pipes: Query<&Transform, (With<Pipe>, Without<Bird>)>,
     bases: Query<&Base, (Without<Pipe>, Without<Bird>)>,
     game_state: Res<State<GameState>>,
     mut collision_event: MessageWriter<CollisionEvent>,
@@ -49,9 +47,9 @@ fn check_collision(
         .expect("Base must be initialized first.");
 
     // Check if bird bottom collides with top base.
-    if bird_transform.translation.y - Bird::HEIGHT.half() <= base.collider_pos {
+    if bird_transform.translation.y - Bird::HEIGHT / 2.0 <= base.collider_pos {
         // this is for bird to lay on the ground
-        bird_transform.translation.y = base.collider_pos + Bird::HEIGHT.half();
+        bird_transform.translation.y = base.collider_pos + Bird::HEIGHT / 2.0;
 
         death_event.write_default();
         collision_event.write_default();
@@ -59,28 +57,17 @@ fn check_collision(
 
     // Check pipe collision only on playing state
     // to prevent each frame checking when bird falls inside a pipe.
-    if matches!(game_state.get(), GameState::Playing) {
-        let bird_collide = |b_pos: Vec3, b_size: Vec2| {
-            let bird_bounding_box = Aabb2d::new(
-                bird_transform.translation.truncate(),
-                Vec2::new(Bird::WIDTH, Bird::HEIGHT).half(),
-            );
-            let other_bounding_box = Aabb2d::new(b_pos.truncate(), b_size.half());
+    if *game_state.get() == GameState::Playing {
+        let bird_box = Aabb2d::new(
+            bird_transform.translation.truncate(),
+            Vec2::new(Bird::WIDTH, Bird::HEIGHT) / 2.0,
+        );
+        let pipe_half_size = Vec2::new(Pipe::WIDTH, Pipe::HEIGHT) / 2.0;
 
-            bird_bounding_box.intersects(&other_bounding_box)
-        };
-
-        // Collide with pipe.
-        for ((pipe_transform, pipe), (flipped_pipe_transform, flipped_pipe)) in
-            pipes.iter().tuples()
-        {
-            let pipe_collision = bird_collide(pipe_transform.translation, pipe.size);
-            let flipped_pipe_collision =
-                bird_collide(flipped_pipe_transform.translation, flipped_pipe.size);
-
-            if pipe_collision || flipped_pipe_collision {
-                collision_event.write_default();
-            }
+        if pipes.iter().any(|pipe| {
+            bird_box.intersects(&Aabb2d::new(pipe.translation.truncate(), pipe_half_size))
+        }) {
+            collision_event.write_default();
         }
     }
 }
