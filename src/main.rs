@@ -50,7 +50,8 @@ fn main() {
             .set(AssetPlugin {
                 meta_check: AssetMetaCheck::Never,
                 ..default()
-            }),
+            })
+            .set(ImagePlugin::default_nearest()),
     )
     .init_state::<GameState>()
     .add_sub_state::<GameOverPhase>()
@@ -82,3 +83,4 @@ fn close_on_esc(
         }
     }
 }
+
