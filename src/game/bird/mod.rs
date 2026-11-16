@@ -66,10 +66,11 @@ fn bird_soul_spawn(
     mut commands: Commands,
     image_assets: Res<ImageAssets>,
     audio_assets: Res<AudioAssets>,
+    bird: Single<&Transform, With<Bird>>,
 ) {
     commands.spawn((
         Sprite::from_image(image_assets.bird_soul.clone()),
-        Transform::from_xyz(Bird::START.x, Bird::GROUND_Y, layer::BIRD_SOUL),
+        Transform::from_xyz(bird.translation.x, Bird::GROUND_Y, layer::BIRD_SOUL),
         BirdSoul,
         DespawnOnExit(GameState::Over),
     ));
