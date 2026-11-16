@@ -4,7 +4,7 @@ use super::ImageAssets;
 use crate::{GameState, SCREEN_HEIGHT};
 use bevy::prelude::*;
 use components::Base;
-use flappybust::{BasicMath, frames};
+use flappybust::frames;
 
 pub struct BasePlugin;
 
@@ -20,7 +20,7 @@ fn spawn(mut commands: Commands, base: Query<(), With<Base>>, image_assets: Res<
         return;
     }
 
-    let base = Base::new(0f32, Base::HEIGHT.half() - SCREEN_HEIGHT.half(), false);
+    let base = Base::new(0f32, (Base::HEIGHT - SCREEN_HEIGHT) / 2.0, false);
     let secondary_base = Base::new(Base::WIDTH, base.translation.y, true);
     let texture = image_assets.base.clone();
 

@@ -11,7 +11,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use components::*;
 use events::*;
-use flappybust::{Switcher, despawn, frames};
+use flappybust::{despawn, frames};
 
 /// Game over logic.
 pub struct GameOverPlugin;
@@ -77,10 +77,7 @@ fn display_restart_btn(
         return;
     }
 
-    if matches!(**visibility, Visibility::Hidden) {
-        visibility.on();
-    }
-
+    visibility.set_if_neq(Visibility::Visible);
     restart_btn_event.write_default();
 }
 
@@ -128,33 +125,19 @@ fn move_scoreboard_up(
 }
 
 fn spawn_medal(mut commands: Commands, score: Res<Score>, image_assets: Res<ImageAssets>) {
-    let mut medal_name = None;
-
-    if score.current >= 10 && score.current < 20 {
-        medal_name = Some(MedalType::Bronze);
-    } else if score.current >= 20 && score.current < 30 {
-        medal_name = Some(MedalType::Silver);
-    } else if score.current >= 30 && score.current < 40 {
-        medal_name = Some(MedalType::Gold);
-    } else if score.current >= 40 {
-        medal_name = Some(MedalType::Platinum);
-    }
+    let image = match score.current {
+        0..10 => return,
+        10..20 => &image_assets.bronze_medal,
+        20..30 => &image_assets.silver_medal,
+        30..40 => &image_assets.gold_medal,
+        _ => &image_assets.platinum_medal,
+    };
 
     commands.spawn((
-        Sprite::from_image(match medal_name {
-            Some(MedalType::Bronze) => image_assets.bronze_medal.clone(),
-            Some(MedalType::Silver) => image_assets.silver_medal.clone(),
-            Some(MedalType::Gold) => image_assets.gold_medal.clone(),
-            Some(MedalType::Platinum) => image_assets.platinum_medal.clone(),
-            None => default(),
-        }),
-        Transform {
-            translation: Vec3::new(-65f32, 47f32, 0.4),
-            scale: Vec3::new(25f32, 25f32, 0f32),
-            ..Transform::IDENTITY
-        },
+        Sprite::from_image(image.clone()),
+        Transform::from_xyz(-65f32, 47f32, 0.4).with_scale(Vec3::new(25f32, 25f32, 1f32)),
         Visibility::Hidden,
-        Medal::new(medal_name),
+        Medal,
     ));
 }
 
@@ -162,7 +145,7 @@ fn spawn_medal(mut commands: Commands, score: Res<Score>, image_assets: Res<Imag
 fn scale_medal(
     time: Res<Time>,
     audio_assets: Res<AudioAssets>,
-    medal: Single<(&mut Transform, &mut Visibility, &Medal)>,
+    medal: Option<Single<(&mut Transform, &mut Visibility), With<Medal>>>,
     mut audio_event: MessageWriter<AudioEvent>,
     mut medal_event: MessageWriter<MedalDisplayed>,
     game_over_text_displayed: MessageReader<GameOverTextDisplayed>,
@@ -176,16 +159,14 @@ fn scale_medal(
         return;
     }
 
-    let (mut transform, mut visibility, medal) = medal.into_inner();
-
-    if medal.get().is_none() {
+    // No medal for low scores.
+    let Some(medal) = medal else {
         medal_event.write_default();
         return;
-    }
+    };
+    let (mut transform, mut visibility) = medal.into_inner();
 
-    if matches!(*visibility, Visibility::Hidden) {
-        visibility.on();
-    }
+    visibility.set_if_neq(Visibility::Visible);
 
     // Reach the final end position.
     if transform.scale.x <= 1f32 {

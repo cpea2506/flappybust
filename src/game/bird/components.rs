@@ -1,25 +1,4 @@
 use bevy::prelude::*;
-use rand::{
-    Rng, RngExt,
-    distr::{Distribution, StandardUniform},
-};
-
-#[derive(Clone, Copy)]
-pub(super) enum BirdColor {
-    Red,
-    Blue,
-    Yellow,
-}
-
-impl Distribution<BirdColor> for StandardUniform {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BirdColor {
-        match rng.random_range(0..3) {
-            0 => BirdColor::Red,
-            1 => BirdColor::Blue,
-            _ => BirdColor::Yellow,
-        }
-    }
-}
 
 type AnimationFrames = Vec<Handle<Image>>;
 

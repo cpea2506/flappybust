@@ -26,14 +26,11 @@ fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>, datetime: Res<D
     let background = Background::new(0f32, 0f32, false);
     let secondary_background =
         Background::new(background.translation.x, background.translation.y, true);
-    let texture = match *datetime {
-        DateTime::Day => image_assets.bg_day.clone(),
-        DateTime::Night => image_assets.bg_night.clone(),
-    };
+    let texture = image_assets.background(*datetime);
 
     commands.spawn_batch(vec![
-        background.generate_bundle(&texture),
-        secondary_background.generate_bundle(&texture),
+        background.generate_bundle(texture),
+        secondary_background.generate_bundle(texture),
     ]);
 }
 
@@ -42,17 +39,10 @@ fn replace_texture(
     datetime: Res<DateTime>,
     image_assets: Res<ImageAssets>,
 ) {
-    let new_texture = match *datetime {
-        DateTime::Day => image_assets.bg_day.clone(),
-        DateTime::Night => image_assets.bg_night.clone(),
-    };
+    let texture = image_assets.background(*datetime);
 
     for mut sprite in &mut backgrounds {
-        if sprite.image == new_texture {
-            return;
-        }
-
-        sprite.image = new_texture.clone();
+        sprite.image = texture.clone();
     }
 }
 

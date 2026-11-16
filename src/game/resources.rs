@@ -1,11 +1,6 @@
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
-use flappybust::ternary;
-use rand::{
-    Rng, RngExt,
-    distr::{Distribution, StandardUniform},
-    random,
-};
+use rand::random;
 
 #[derive(AssetCollection, Resource)]
 pub struct AudioAssets {
@@ -90,23 +85,24 @@ pub enum DateTime {
     Night,
 }
 
-impl Distribution<DateTime> for StandardUniform {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> DateTime {
-        ternary!(rng.random_bool(0.5), DateTime::Day, DateTime::Night)
+impl Default for DateTime {
+    fn default() -> Self {
+        if random() { DateTime::Day } else { DateTime::Night }
     }
 }
 
 impl ImageAssets {
+    pub fn background(&self, datetime: DateTime) -> &Handle<Image> {
+        match datetime {
+            DateTime::Day => &self.bg_day,
+            DateTime::Night => &self.bg_night,
+        }
+    }
+
     pub fn pipe(&self, datetime: DateTime) -> &Handle<Image> {
         match datetime {
             DateTime::Day => &self.green_pipe,
             DateTime::Night => &self.red_pipe,
         }
-    }
-}
-
-impl Default for DateTime {
-    fn default() -> Self {
-        random::<Self>()
     }
 }

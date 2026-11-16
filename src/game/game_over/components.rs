@@ -1,25 +1,7 @@
 use bevy::prelude::*;
 
-#[derive(Clone, Copy)]
-pub enum MedalType {
-    Bronze,
-    Silver,
-    Gold,
-    Platinum,
-}
-
 #[derive(Component)]
-pub struct Medal(Option<MedalType>);
-
-impl Medal {
-    pub fn new(medal: Option<MedalType>) -> Self {
-        Self(medal)
-    }
-
-    pub fn get(&self) -> &Option<MedalType> {
-        &self.0
-    }
-}
+pub struct Medal;
 
 #[derive(Component)]
 pub struct RestartButton;

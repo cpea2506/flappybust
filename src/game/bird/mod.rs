@@ -7,8 +7,8 @@ use super::{
 use bevy::prelude::*;
 use components::*;
 use events::*;
-use flappybust::{BasicMath, Switcher, despawn, frames};
-use rand::random;
+use flappybust::{despawn, frames};
+use rand::random_range;
 
 /// Bird logic.
 pub struct BirdPlugin;
@@ -39,12 +39,12 @@ impl Plugin for BirdPlugin {
 }
 
 fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>) {
-    let bird_color = random::<BirdColor>();
-    let animation_frames = match bird_color {
-        BirdColor::Red => image_assets.red_birds.clone(),
-        BirdColor::Blue => image_assets.blue_birds.clone(),
-        BirdColor::Yellow => image_assets.yellow_birds.clone(),
-    };
+    let birds = [
+        &image_assets.red_birds,
+        &image_assets.blue_birds,
+        &image_assets.yellow_birds,
+    ];
+    let animation_frames = birds[random_range(0..birds.len())].clone();
     let bird = Bird::new(-53f32, 9f32);
 
     commands.spawn((
@@ -65,7 +65,7 @@ fn bird_soul_spawn(
     let base = base.iter().next().expect("Base must be initialized first.");
     let translation = Vec3::new(
         bird.translation.x,
-        base.collider_pos + Bird::HEIGHT.half(),
+        base.collider_pos + Bird::HEIGHT / 2.0,
         0.5,
     );
 
@@ -91,8 +91,7 @@ fn bird_soul_fly(
 
     let (mut transform, mut visibility) = bird_soul.into_inner();
 
-    if matches!(*visibility, Visibility::Hidden) {
-        visibility.on();
+    if visibility.set_if_neq(Visibility::Visible) {
         audio_event.write(AudioEvent::new(&audio_assets.heaven, false));
     }
 
@@ -152,7 +151,7 @@ fn flap(time: Res<Time>, bird: Single<(&mut FlapAnimation, &mut Sprite), With<Bi
     animation.timer.tick(time.delta());
 
     if animation.timer.just_finished() {
-        animation.current_frame = (animation.current_frame + 1) % 3;
+        animation.current_frame = (animation.current_frame + 1) % animation.frames.len();
         sprite.image = animation.frames[animation.current_frame].clone();
     }
 }

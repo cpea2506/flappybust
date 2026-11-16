@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use flappybust::BasicMath;
 
 #[derive(Component, Default)]
 pub struct Base {
@@ -18,7 +17,7 @@ impl Base {
         Base {
             translation: Vec3::new(x, y, 0.4),
             secondary,
-            collider_pos: y + Self::HEIGHT.half(),
+            collider_pos: y + Self::HEIGHT / 2.0,
         }
     }
 
