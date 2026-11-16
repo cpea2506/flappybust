@@ -1,6 +1,6 @@
 # Flappybust
 
-🦀🦋 is a personal game project written in [Bevy](https://bevyengine.org) engine based on Nguyen Ha Dong original Flappy Bird game
+🦀🦋 is a personal game project written in [Bevy](https://bevy.org) engine based on Nguyen Ha Dong original Flappy Bird game
 
 ## How to play
 
@@ -11,8 +11,9 @@
 
 ### Prerequisite
 
-- Rust >= 1.78 (nightly)
+- Rust nightly (pinned by `rust-toolchain.toml`)
 - [Cargo Watch](https://crates.io/crates/cargo-watch) (optional)
+- [Trunk](https://trunkrs.dev) (optional, for the web build)
 
 ### Steps
 
@@ -28,11 +29,18 @@ $ cargo run
 # concurrently run Bevy with dynamic features
 
 $ cargo watch_dynamic
+
+# or
+# require trunk
+# serve the web build at http://127.0.0.1:8080
+
+$ trunk serve
 ```
 
 ## Todo
 
-- [ ] Add currency system: coins will be spawn randomly between two pipes and they will be used to buy assets in store
+- [x] Spawn coins randomly between two pipes for the bird to collect
+- [ ] Add currency system: collected coins will be used to buy assets in store
 - [ ] Add option to pause and resume gameplay
 
 ## Preview
