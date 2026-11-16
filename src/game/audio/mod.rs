@@ -15,22 +15,19 @@ impl Plugin for AudioPlugin {
 }
 
 fn play_audio(mut commands: Commands, mut audio_events: MessageReader<AudioEvent>) {
-    if audio_events.is_empty() {
-        return;
-    }
-
     for audio_event in audio_events.read() {
+        let player = AudioPlayer::new(audio_event.source.clone());
+        let volume = Volume::Linear(audio_event.volume);
+
         if audio_event.looped {
             commands.spawn((
-                AudioPlayer::new(audio_event.source.clone()),
-                PlaybackSettings::LOOP.with_volume(Volume::Linear(audio_event.volume)),
+                player,
+                PlaybackSettings::LOOP.with_volume(volume),
                 AmbientMusic,
             ));
         } else {
-            commands.spawn((
-                AudioPlayer::new(audio_event.source.clone()),
-                PlaybackSettings::ONCE.with_volume(Volume::Linear(audio_event.volume)),
-            ));
+            // Despawn one-shot sounds once finished so they don't pile up.
+            commands.spawn((player, PlaybackSettings::DESPAWN.with_volume(volume)));
         }
     }
 }

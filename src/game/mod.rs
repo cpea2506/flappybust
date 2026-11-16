@@ -18,6 +18,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bird::BirdPlugin;
 use collision::CollisionPlugin;
+use flappybust::despawn;
 use game_over::GameOverPlugin;
 use pipe::PipePlugin;
 use ready_message::ReadyMessagePlugin;
@@ -51,7 +52,7 @@ impl Plugin for GamePlugin {
                 GameOverPlugin,
             ))
             .add_systems(OnEnter(GameState::Playing), play_ambient_music)
-            .add_systems(OnExit(GameState::Playing), stop_ambient_music)
+            .add_systems(OnExit(GameState::Playing), despawn::<AmbientMusic>)
             .add_systems(OnExit(GameState::Over), (init_datetime, stop_all_songs));
     }
 }
@@ -68,10 +69,4 @@ fn stop_all_songs(audio_sinks: Query<&AudioSink>) {
 
 fn play_ambient_music(mut audio_event: MessageWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {
     audio_event.write(AudioEvent::new_with_volume(&audio_assets.theme, true, 0.2));
-}
-
-fn stop_ambient_music(ambient_sinks: Query<&AudioSink, With<AmbientMusic>>) {
-    for sink in &ambient_sinks {
-        sink.stop();
-    }
 }
