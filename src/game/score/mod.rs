@@ -82,12 +82,13 @@ fn display_scoreboard_score(
         ..default()
     };
 
-    for (value, y) in [(score.current, 67f32), (score.highest, 18f32)] {
+    // Right-aligned to the "SCORE" and "BEST" labels.
+    for (value, y) in [(score.current, 65.5f32), (score.highest, 16f32)] {
         commands.spawn((
             Text2d::new(value.to_string()),
             text_font.clone(),
-            TextLayout::justify(Justify::Center),
-            Transform::from_xyz(63.8f32, y, 0.3),
+            Anchor::CENTER_RIGHT,
+            Transform::from_xyz(100f32, y, 0.3),
             ScoreboardScore,
         ));
     }
