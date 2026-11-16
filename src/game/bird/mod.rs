@@ -35,6 +35,11 @@ impl Plugin for BirdPlugin {
             // Before the fixed steps so a press moves the bird up this frame, not the next.
             .add_systems(
                 RunFixedMainLoop,
+                tilt.in_set(RunFixedMainLoopSystems::AfterFixedMainLoop)
+                    .run_if(not(in_state(GameState::Ready))),
+            )
+            .add_systems(
+                RunFixedMainLoop,
                 fly.in_set(RunFixedMainLoopSystems::BeforeFixedMainLoop)
                     .run_if(in_state(GameState::Playing))
                     .run_if(flap_pressed),
@@ -99,8 +104,10 @@ fn bird_soul_fly(
     }
 }
 
-fn fall(bird: Single<(&mut Bird, &mut Position, &mut Transform)>) {
-    let (mut bird, mut position, mut transform) = bird.into_inner();
+fn fall(bird: Single<(&mut Bird, &mut Position)>) {
+    let (mut bird, mut position) = bird.into_inner();
+
+    bird.previous_rotation = bird.rotation;
 
     // A dead bird just lies on the base.
     if position.y <= Bird::GROUND_Y {
@@ -117,7 +124,16 @@ fn fall(bird: Single<(&mut Bird, &mut Position, &mut Transform)>) {
     bird.velocity = (bird.velocity + Bird::GRAVITY).min(Bird::MAX_VELOCITY);
 
     position.y = (position.y - bird.velocity).max(Bird::GROUND_Y);
-    transform.rotation = Quat::from_rotation_z(bird.rotation.min(Bird::MAX_ROTATION));
+}
+
+/// Show the tilt between the last two fixed steps, like `Position` is shown.
+fn tilt(time: Res<Time<Fixed>>, bird: Single<(&Bird, &mut Transform)>) {
+    let (bird, mut transform) = bird.into_inner();
+    let rotation = bird
+        .previous_rotation
+        .lerp(bird.rotation, time.overstep_fraction());
+
+    transform.rotation = Quat::from_rotation_z(rotation.min(Bird::MAX_ROTATION));
 }
 
 /// Queue a flap for the next fixed step, which may not run this frame.

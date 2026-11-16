@@ -34,6 +34,8 @@ impl BouncingAnimation {
 pub struct Bird {
     pub velocity: f32,
     pub rotation: f32,
+    /// `rotation` at the end of the previous fixed step, to interpolate the tilt from.
+    pub previous_rotation: f32,
     /// A flap pressed since the last fixed step, which applies it.
     pub flap_queued: bool,
 }
@@ -66,6 +68,7 @@ impl Default for Bird {
         Bird {
             velocity: Self::DEFAULT_VELOCITY,
             rotation: Self::FLAP_ROTATION,
+            previous_rotation: Self::FLAP_ROTATION,
             flap_queued: false,
         }
     }

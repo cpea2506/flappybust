@@ -4,7 +4,7 @@ use super::{AudioAssets, ImageAssets, bird::components::Bird, layer, score::comp
 use crate::{GameOverPhase, GameState};
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use components::*;
-use flappybust::{frames, sound};
+use flappybust::{Position, frames, sound};
 
 /// Game over logic.
 pub struct GameOverPlugin;
@@ -13,7 +13,7 @@ impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Over), spawn_game_over)
             .add_systems(
-                Update,
+                FixedUpdate,
                 (bounce_game_over_text, move_scoreboard_up, finish_board)
                     .chain()
                     .run_if(in_state(GameOverPhase::Board)),
@@ -33,33 +33,28 @@ impl Plugin for GameOverPlugin {
 fn spawn_game_over(mut commands: Commands, image_assets: Res<ImageAssets>) {
     commands.spawn((
         Sprite::from_image(image_assets.game_over.clone()),
-        Transform::from_xyz(0f32, GameOverText::START_Y, layer::HUD),
+        Position(Vec3::new(0f32, GameOverText::START_Y, layer::HUD)),
         GameOverText::default(),
         DespawnOnExit(GameState::Over),
     ));
 
     commands.spawn((
         Sprite::from_image(image_assets.scoreboard.clone()),
-        Transform::from_xyz(0f32, Scoreboard::START_Y, layer::HUD),
+        Position(Vec3::new(0f32, Scoreboard::START_Y, layer::HUD)),
         Scoreboard::default(),
         DespawnOnExit(GameState::Over),
     ));
 }
 
-fn bounce_game_over_text(
-    time: Res<Time>,
-    game_over_text: Single<(&mut Transform, &mut GameOverText)>,
-) {
-    let (mut transform, mut game_over_text) = game_over_text.into_inner();
+fn bounce_game_over_text(game_over_text: Single<(&mut Position, &mut GameOverText)>) {
+    let (mut position, mut game_over_text) = game_over_text.into_inner();
 
-    let frames = frames(&time);
+    game_over_text.velocity += GameOverText::GRAVITY;
+    position.y -= game_over_text.velocity;
 
-    game_over_text.velocity += GameOverText::GRAVITY * frames;
-    transform.translation.y -= game_over_text.velocity * frames;
-
-    if transform.translation.y < GameOverText::REST_Y {
+    if position.y < GameOverText::REST_Y {
         if game_over_text.bounced {
-            transform.translation.y = GameOverText::REST_Y;
+            position.y = GameOverText::REST_Y;
         } else {
             game_over_text.velocity *= -GameOverText::BOUNCINESS;
             game_over_text.bounced = true;
@@ -67,30 +62,27 @@ fn bounce_game_over_text(
     }
 }
 
-fn move_scoreboard_up(time: Res<Time>, scoreboard: Single<(&mut Transform, &mut Scoreboard)>) {
-    let (mut transform, mut scoreboard) = scoreboard.into_inner();
+fn move_scoreboard_up(scoreboard: Single<(&mut Position, &mut Scoreboard)>) {
+    let (mut position, mut scoreboard) = scoreboard.into_inner();
 
-    let frames = frames(&time);
+    scoreboard.velocity += Scoreboard::GRAVITY;
 
-    scoreboard.velocity += Scoreboard::GRAVITY * frames;
-
-    transform.translation.y = (transform.translation.y + scoreboard.velocity * frames)
-        .clamp(Scoreboard::START_Y, Scoreboard::END_Y);
+    position.y = (position.y + scoreboard.velocity).clamp(Scoreboard::START_Y, Scoreboard::END_Y);
 }
 
 /// Move on to the medal once the text and scoreboard are in place and the bird lies on the base.
 fn finish_board(
-    game_over_text: Single<(&Transform, &GameOverText)>,
-    scoreboard: Single<&Transform, With<Scoreboard>>,
-    bird: Single<&Transform, With<Bird>>,
+    game_over_text: Single<(&Position, &GameOverText)>,
+    scoreboard: Single<&Position, With<Scoreboard>>,
+    bird: Single<&Position, With<Bird>>,
     mut next_phase: ResMut<NextState<GameOverPhase>>,
 ) {
-    let (text_transform, game_over_text) = *game_over_text;
+    let (text_position, game_over_text) = *game_over_text;
 
     if game_over_text.bounced
-        && text_transform.translation.y == GameOverText::REST_Y
-        && scoreboard.translation.y == Scoreboard::END_Y
-        && bird.translation.y == Bird::GROUND_Y
+        && text_position.y == GameOverText::REST_Y
+        && scoreboard.y == Scoreboard::END_Y
+        && bird.y == Bird::GROUND_Y
     {
         next_phase.set(GameOverPhase::Medal);
     }
