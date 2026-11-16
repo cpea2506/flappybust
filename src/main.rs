@@ -1,7 +1,14 @@
 mod game;
 
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::{
+    asset::AssetMetaCheck,
+    platform::time::Instant,
+    prelude::*,
+    time::{TimeSystems, TimeUpdateStrategy},
+    window::{Monitor, PrimaryMonitor},
+};
 use game::GamePlugin;
+use std::time::Duration;
 
 const SCREEN_WIDTH: f32 = 288f32;
 const SCREEN_HEIGHT: f32 = 512f32;
@@ -37,6 +44,7 @@ fn main() {
         .init_state::<GameState>()
         .add_plugins(GamePlugin)
         .add_systems(Startup, setup_camera)
+        .add_systems(First, snap_frame_time.before(TimeSystems))
         .add_systems(Update, close_on_esc)
         .run();
 }
@@ -56,4 +64,33 @@ fn close_on_esc(
             commands.entity(entity).despawn();
         }
     }
+}
+
+/// Advance game time in whole display refreshes instead of the measured frame time.
+///
+/// The measured time jitters by a millisecond or more while frames reach the screen at a
+/// steady rate, which made moving sprites (the bird most of all) step unevenly.
+fn snap_frame_time(
+    monitor: Query<&Monitor, With<PrimaryMonitor>>,
+    mut strategy: ResMut<TimeUpdateStrategy>,
+    mut last: Local<Option<Instant>>,
+) {
+    let now = Instant::now();
+    let Some(prev) = last.replace(now) else {
+        return;
+    };
+    let Some(millihertz) = monitor
+        .iter()
+        .next()
+        .and_then(|m| m.refresh_rate_millihertz)
+    else {
+        return;
+    };
+
+    let refresh = Duration::from_secs_f64(1000.0 / millihertz as f64);
+    let refreshes = ((now - prev).as_secs_f64() / refresh.as_secs_f64())
+        .round()
+        .max(1.0);
+
+    *strategy = TimeUpdateStrategy::ManualDuration(refresh.mul_f64(refreshes));
 }
