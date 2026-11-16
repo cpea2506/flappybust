@@ -37,7 +37,7 @@ pub struct GameOverText {
 impl Default for GameOverText {
     fn default() -> Self {
         GameOverText {
-            gravity: 0.1,
+            gravity: 0.6,
             velocity: 0f32,
             bounce: true,
         }

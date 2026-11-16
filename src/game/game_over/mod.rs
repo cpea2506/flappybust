@@ -175,7 +175,7 @@ fn scale_medal(
     }
 
     // Shrink both xy back to the original size.
-    let scale = (transform.scale.x - frames(&time)).max(1f32);
+    let scale = (transform.scale.x - 2f32 * frames(&time)).max(1f32);
     transform.scale = Vec3::new(scale, scale, 1f32);
 
     if scale == 1f32 {
