@@ -146,6 +146,7 @@ fn spawn_restart_btn(mut commands: Commands, image_assets: Res<ImageAssets>) {
             Sprite::from_image(image_assets.restart_btn.clone()),
             Transform::from_xyz(0f32, RestartButton::Y, layer::HUD),
             RestartButton,
+            Pickable::default(),
             DespawnOnExit(GameState::Over),
         ))
         // Left click or touch, like the restart press it replaces.
