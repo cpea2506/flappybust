@@ -15,6 +15,17 @@ pub fn sound(source: &Handle<AudioSource>) -> impl Bundle {
     (AudioPlayer::new(source.clone()), PlaybackSettings::DESPAWN)
 }
 
+/// Whether the player flapped this frame: Space, a left click or a touch.
+pub fn flap_pressed(
+    keys: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    touches: Res<Touches>,
+) -> bool {
+    keys.just_pressed(KeyCode::Space)
+        || mouse.just_pressed(MouseButton::Left)
+        || touches.any_just_pressed()
+}
+
 /// Endless horizontal scrolling for a pair of tiles placed `period` apart.
 #[derive(Component)]
 pub struct Scroll {

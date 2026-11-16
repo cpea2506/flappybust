@@ -1,7 +1,10 @@
 automod::dir!(pub "src/game/score");
 
 use super::{
-    AudioAssets, FontAssets, GameState, bird::components::Bird, layer, pipe::components::Pipe,
+    AudioAssets, FontAssets, GameState,
+    bird::components::Bird,
+    layer,
+    pipe::components::{LowerPipe, Scored},
 };
 use crate::{GameOverPhase, SCREEN_HEIGHT};
 use bevy::{camera::visibility::NoFrustumCulling, prelude::*, sprite::Anchor};
@@ -73,21 +76,21 @@ fn spawn_scoreboard_score(mut commands: Commands, score: Res<Score>, font_assets
     }
 }
 
+/// Lower pipes the bird hasn't passed yet.
+type Unscored = (With<LowerPipe>, Without<Scored>);
+
 /// Score a point each time the bird passes a pipe pair (counted on the lower pipe).
 fn record(
     mut commands: Commands,
     audio_assets: Res<AudioAssets>,
     bird: Single<&Transform, With<Bird>>,
-    mut pipes: Query<(&mut Pipe, &Transform)>,
+    pipes: Query<(Entity, &Transform), Unscored>,
     mut score: ResMut<Score>,
     mut current_score: Single<&mut Text2d, With<CurrentScore>>,
 ) {
-    for (mut pipe, pipe_transform) in &mut pipes {
-        if !pipe.flip_y
-            && !pipe.scored
-            && bird.translation.x + Bird::WIDTH / 2.0 > pipe_transform.translation.x
-        {
-            pipe.scored = true;
+    for (pipe, pipe_transform) in &pipes {
+        if bird.translation.x + Bird::WIDTH / 2.0 > pipe_transform.translation.x {
+            commands.entity(pipe).insert(Scored);
             score.current += 1;
             score.highest = score.current.max(score.highest);
             current_score.0 = score.current.to_string();

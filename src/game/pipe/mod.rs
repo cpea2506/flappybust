@@ -3,7 +3,7 @@ automod::dir!(pub "src/game/pipe");
 use super::{DateTime, ImageAssets};
 use crate::{GAME_SPEED, GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
-use components::{Coin, Pipe};
+use components::{Coin, LowerPipe, Pipe};
 use flappybust::frames;
 
 // A respawned pair must start off screen.
@@ -36,21 +36,21 @@ type Scrolling = Or<(With<Pipe>, With<Coin>)>;
 
 fn moving(
     mut commands: Commands,
-    mut pipes: Query<(Entity, Option<&Pipe>, &mut Transform), Scrolling>,
+    mut pipes: Query<(Entity, Has<LowerPipe>, &mut Transform), Scrolling>,
     image_assets: Res<ImageAssets>,
     datetime: Res<DateTime>,
     time: Res<Time>,
 ) {
     let distance = GAME_SPEED * frames(&time);
 
-    for (entity, pipe, mut transform) in &mut pipes {
+    for (entity, lower, mut transform) in &mut pipes {
         transform.translation.x -= distance;
 
         // Remove pipes and coins that are outside of screen and queue a new pair behind the last one.
         if transform.translation.x <= -(SCREEN_WIDTH + Pipe::WIDTH) / 2.0 {
             commands.entity(entity).despawn();
 
-            if pipe.is_some_and(|pipe| !pipe.flip_y) {
+            if lower {
                 let x = transform.translation.x + Pipe::PAIRS as f32 * Pipe::SPACING;
                 let texture = image_assets.pipe(*datetime);
                 Pipe::spawn_pair(&mut commands, texture, &image_assets.coin, x);

@@ -10,7 +10,7 @@ use bevy::{
     shape::{Aabb2d, BoundingCircle, IntersectsVolume},
 };
 use components::*;
-use flappybust::{frames, sound};
+use flappybust::{flap_pressed, frames, sound};
 use rand::random_range;
 
 /// Bird logic.
@@ -27,7 +27,10 @@ impl Plugin for BirdPlugin {
                     fall.run_if(not(in_state(GameState::Ready))),
                     flap.run_if(not(in_state(GameState::Over))),
                     // Flap before falling so a press moves the bird up this frame, not the next.
-                    fly.run_if(in_state(GameState::Playing)).before(fall),
+                    fly.run_if(in_state(GameState::Playing))
+                        .run_if(flap_pressed)
+                        .before(fall),
+                    swoosh.run_if(in_state(GameState::Playing)),
                     bird_soul_fly.run_if(in_state(GameOverPhase::Soul)),
                 ),
             )
@@ -106,24 +109,20 @@ fn fall(time: Res<Time>, bird: Single<(&mut Bird, &mut Transform)>) {
     transform.rotation = Quat::from_rotation_z(bird.rotation.min(Bird::MAX_ROTATION));
 }
 
-fn fly(
+fn fly(mut commands: Commands, mut bird: Single<&mut Bird>, audio_assets: Res<AudioAssets>) {
+    commands.spawn(sound(&audio_assets.wing));
+
+    bird.velocity = Bird::DEFAULT_VELOCITY;
+    bird.rotation = Bird::FLAP_ROTATION;
+}
+
+fn swoosh(
     mut commands: Commands,
-    mut bird: Single<&mut Bird>,
     keys: Res<ButtonInput<KeyCode>>,
     buttons: Res<ButtonInput<MouseButton>>,
     touches: Res<Touches>,
     audio_assets: Res<AudioAssets>,
 ) {
-    if keys.just_pressed(KeyCode::Space)
-        || buttons.just_pressed(MouseButton::Left)
-        || touches.any_just_pressed()
-    {
-        commands.spawn(sound(&audio_assets.wing));
-
-        bird.velocity = Bird::DEFAULT_VELOCITY;
-        bird.rotation = Bird::FLAP_ROTATION;
-    }
-
     if keys.just_released(KeyCode::Space)
         || buttons.just_released(MouseButton::Left)
         || touches.any_just_released()
