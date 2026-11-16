@@ -2,7 +2,11 @@
 
 mod game;
 
-use bevy::{asset::AssetMetaCheck, prelude::*, window::close_on_esc};
+use bevy::{
+    asset::AssetMetaCheck,
+    prelude::*,
+    window::{close_on_esc, PrimaryWindow},
+};
 use game::{game_over::events::RestartButtonDisplayed, GamePlugin};
 
 const SCREEN_WIDTH: f32 = 288f32;
@@ -64,7 +68,7 @@ fn restart_game(
     key: Res<ButtonInput<KeyCode>>,
     mouse: Res<ButtonInput<MouseButton>>,
     mut next_state: ResMut<NextState<GameState>>,
-    mut cursor_moved: EventReader<CursorMoved>,
+    window: Query<&Window, With<PrimaryWindow>>,
     restart_btn_displayed: EventReader<RestartButtonDisplayed>,
 ) {
     if restart_btn_displayed.is_empty() {
@@ -75,16 +79,14 @@ fn restart_game(
         next_state.set(GameState::Ready);
     }
 
-    if mouse.just_pressed(MouseButton::Left) {
-        for cursor in cursor_moved.read() {
-            // The cursor must be inside restart btn area.
-            if cursor.position.y > 273f32
-                && cursor.position.y < 310f32
-                && cursor.position.x > 90f32
-                && cursor.position.x < 200f32
-            {
-                next_state.set(GameState::Ready);
-            }
+    if !mouse.just_pressed(MouseButton::Left) {
+        return;
+    }
+
+    // The cursor must be inside restart btn area.
+    if let Some(cursor) = window.single().cursor_position() {
+        if cursor.y > 273f32 && cursor.y < 310f32 && cursor.x > 90f32 && cursor.x < 200f32 {
+            next_state.set(GameState::Ready);
         }
     }
 }

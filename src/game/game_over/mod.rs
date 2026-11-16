@@ -10,7 +10,7 @@ use crate::GameState;
 use bevy::prelude::*;
 use components::*;
 use events::*;
-use flappybust::{despawn, Switcher};
+use flappybust::{despawn, frames, Switcher};
 
 /// Game over logic.
 pub struct GameOverPlugin;
@@ -94,13 +94,16 @@ fn display_restart_btn(
 }
 
 fn bounce_game_over_text(
+    time: Res<Time>,
     mut game_over_text: Query<(&mut Transform, &mut GameOverText)>,
     mut game_over_text_event: EventWriter<GameOverTextDisplayed>,
 ) {
     let (mut transform, mut game_over_text) = game_over_text.single_mut();
 
-    game_over_text.velocity += game_over_text.gravity;
-    transform.translation.y -= game_over_text.velocity;
+    let frames = frames(&time);
+
+    game_over_text.velocity += game_over_text.gravity * frames;
+    transform.translation.y -= game_over_text.velocity * frames;
 
     if transform.translation.y < 156f32 {
         if game_over_text.bounce {
@@ -115,14 +118,18 @@ fn bounce_game_over_text(
 }
 
 fn move_scoreboard_up(
+    time: Res<Time>,
     mut scoreboard: Query<(&mut Transform, &mut Scoreboard)>,
     mut scoreboard_event: EventWriter<ScoreboardDisplayed>,
 ) {
     let (mut transform, mut scoreboard) = scoreboard.single_mut();
 
-    scoreboard.velocity += scoreboard.gravity;
+    let frames = frames(&time);
 
-    transform.translation.y = (transform.translation.y + scoreboard.velocity).clamp(-199f32, 57f32);
+    scoreboard.velocity += scoreboard.gravity * frames;
+
+    transform.translation.y =
+        (transform.translation.y + scoreboard.velocity * frames).clamp(-199f32, 57f32);
 
     if transform.translation.y == 57f32 {
         scoreboard_event.send_default();
@@ -165,7 +172,9 @@ fn spawn_medal(mut commands: Commands, score: Res<Score>, image_assets: Res<Imag
     ));
 }
 
+#[allow(clippy::too_many_arguments)]
 fn scale_medal(
+    time: Res<Time>,
     audio_assets: Res<AudioAssets>,
     mut medal: Query<(&mut Transform, &mut Visibility, &Medal)>,
     mut audio_event: EventWriter<AudioEvent>,
@@ -192,21 +201,17 @@ fn scale_medal(
         visibility.on();
     }
 
-    // Scale both xy for circle.
-    let scale_direction = Vec3::X + Vec3::Y;
-    let unit_length = Vec3::ONE.length();
-
-    // Scale to orignal state.
-    transform.scale = (transform.scale - scale_direction).clamp_length_min(unit_length);
-
-    // Play audio if and only if the scale length is reached.
-    // (orignal + scale_direction) length.
-    if transform.scale == (Vec3::X + Vec3::Y + scale_direction) {
-        audio_event.send(AudioEvent::new(&audio_assets.ding, false));
+    // Reach the final end position.
+    if transform.scale.x <= 1f32 {
+        medal_event.send_default();
+        return;
     }
 
-    // Reach the final end position.
-    if transform.scale == (transform.scale - scale_direction).clamp_length_min(unit_length) {
-        medal_event.send_default();
+    // Shrink both xy back to the original size.
+    let scale = (transform.scale.x - frames(&time)).max(1f32);
+    transform.scale = Vec3::new(scale, scale, 1f32);
+
+    if scale == 1f32 {
+        audio_event.send(AudioEvent::new(&audio_assets.ding, false));
     }
 }

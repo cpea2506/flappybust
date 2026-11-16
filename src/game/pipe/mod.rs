@@ -4,7 +4,7 @@ use super::{DateTime, ImageAssets};
 use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use components::Pipe;
-use flappybust::{despawn, BasicMath};
+use flappybust::{despawn, frames, BasicMath};
 use itertools::Itertools;
 
 /// Pipe logic.
@@ -26,15 +26,17 @@ fn moving(
     mut pipe: Query<(Entity, &mut Transform), With<Pipe>>,
     image_assets: Res<ImageAssets>,
     datetime: Res<DateTime>,
+    time: Res<Time>,
 ) {
     let half_pipe_width = Pipe::WIDTH.half();
     let half_screen_width = SCREEN_WIDTH.half();
+    let distance = frames(&time);
 
     for ((pipe_entity, mut pipe_transform), (flipped_pipe_entity, mut flipped_pipe_transform)) in
         pipe.iter_mut().tuples()
     {
-        pipe_transform.translation.x -= 1f32;
-        flipped_pipe_transform.translation.x -= 1f32;
+        pipe_transform.translation.x -= distance;
+        flipped_pipe_transform.translation.x -= distance;
 
         // Remove pipes that are outside of screen.
         if pipe_transform.translation.x <= -half_pipe_width - half_screen_width {

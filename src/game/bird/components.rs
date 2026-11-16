@@ -39,7 +39,7 @@ impl FlapAnimation {
 
 #[derive(Component, Default)]
 pub(super) struct BouncingAnimation {
-    pub velocity: f32,
+    pub phase: f32,
 }
 
 #[derive(Component, Clone, Copy)]
@@ -66,6 +66,4 @@ impl Bird {
 }
 
 #[derive(Component)]
-pub(super) struct BirdSoul {
-    pub translation: Vec3,
-}
+pub(super) struct BirdSoul;

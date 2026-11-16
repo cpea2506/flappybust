@@ -7,7 +7,7 @@ use super::{
 use bevy::prelude::*;
 use components::*;
 use events::*;
-use flappybust::{despawn, BasicMath, Switcher};
+use flappybust::{despawn, frames, BasicMath, Switcher};
 use rand::random;
 
 /// Bird logic.
@@ -80,12 +80,13 @@ fn bird_soul_spawn(
             transform: Transform::from_translation(translation),
             ..default()
         },
-        BirdSoul { translation },
+        BirdSoul,
     ));
 }
 
 fn bird_soul_fly(
-    mut bird_soul: Query<(&mut Transform, &mut Visibility, &BirdSoul)>,
+    time: Res<Time>,
+    mut bird_soul: Query<(&mut Transform, &mut Visibility), With<BirdSoul>>,
     mut audio_event: EventWriter<AudioEvent>,
     audio_assets: Res<AudioAssets>,
     medal_event: EventReader<MedalDisplayed>,
@@ -95,28 +96,31 @@ fn bird_soul_fly(
         return;
     }
 
-    let (mut transform, mut visibility, bird_soul) = bird_soul.single_mut();
+    let (mut transform, mut visibility) = bird_soul.single_mut();
 
     if matches!(*visibility, Visibility::Hidden) {
         visibility.on();
-    }
-
-    transform.translation.y += 1f32;
-
-    if transform.translation.y == bird_soul.translation.y + 1f32 {
         audio_event.send(AudioEvent::new(&audio_assets.heaven, false));
     }
+
+    transform.translation.y += frames(&time);
 
     if transform.translation.y >= 267f32 {
         in_heaven.send_default();
     }
 }
 
-fn fall(mut bird: Query<(&mut Bird, &mut Transform)>, death_event: EventReader<DeathEvent>) {
+fn fall(
+    time: Res<Time>,
+    mut bird: Query<(&mut Bird, &mut Transform)>,
+    death_event: EventReader<DeathEvent>,
+) {
     let (mut bird, mut bird_transform) = bird.single_mut();
+    let frames = frames(&time);
 
     // Rotate down at min -90deg and rotate up at max 25deg.
-    bird.rotation = (bird.rotation - 40f32.recip()).clamp(-90f32.to_radians(), 25f32.to_radians());
+    bird.rotation =
+        (bird.rotation - 40f32.recip() * frames).clamp(-90f32.to_radians(), 25f32.to_radians());
 
     // Don't try to fall if bird has been already dead,
     // just lay on the ground.
@@ -124,9 +128,9 @@ fn fall(mut bird: Query<(&mut Bird, &mut Transform)>, death_event: EventReader<D
         return;
     }
 
-    bird.velocity += bird.gravity;
+    bird.velocity += bird.gravity * frames;
 
-    bird_transform.translation.y -= bird.velocity;
+    bird_transform.translation.y -= bird.velocity * frames;
     bird_transform.rotation = Quat::from_rotation_z(bird.rotation);
 }
 
@@ -162,9 +166,14 @@ fn flap(time: Res<Time>, mut bird: Query<(&mut FlapAnimation, &mut Handle<Image>
     }
 }
 
-fn bounce_vertical(mut bird: Query<(&mut Transform, &mut BouncingAnimation), With<Bird>>) {
-    let (mut transform, mut bouncing_animation) = bird.single_mut();
+fn bounce_vertical(
+    time: Res<Time>,
+    mut bird: Query<(&mut Transform, &mut BouncingAnimation, &Bird)>,
+) {
+    let (mut transform, mut bouncing_animation, bird) = bird.single_mut();
 
-    transform.translation.y += bouncing_animation.velocity.sin();
-    bouncing_animation.velocity += 0.16;
+    bouncing_animation.phase += 0.16 * frames(&time);
+
+    // Set the position from the phase instead of accumulating steps, so it never drifts.
+    transform.translation.y = bird.translation.y + (1f32 - bouncing_animation.phase.cos()) / 0.16;
 }
