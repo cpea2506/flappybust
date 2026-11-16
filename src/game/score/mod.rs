@@ -1,8 +1,8 @@
 automod::dir!(pub "src/game/score");
 
 use super::{
-    AudioAssets, FontAssets, GameState, audio::events::AudioEvent, bird::components::Bird,
-    game_over::events::ScoreboardDisplayed, pipe::components::Pipe,
+    AudioAssets, FontAssets, GameState, audio::messages::AudioMessage, bird::components::Bird,
+    game_over::messages::ScoreboardDisplayed, pipe::components::Pipe,
 };
 use crate::SCREEN_HEIGHT;
 use bevy::{camera::visibility::NoFrustumCulling, prelude::*, sprite::Anchor};
@@ -96,7 +96,7 @@ fn display_scoreboard_score(
 
 fn record(
     audio_assets: Res<AudioAssets>,
-    mut audio_event: MessageWriter<AudioEvent>,
+    mut audio_message: MessageWriter<AudioMessage>,
     bird_transform: Single<&Transform, With<Bird>>,
     mut pipes: Query<(&mut Pipe, &Transform)>,
     mut score: ResMut<Score>,
@@ -111,7 +111,7 @@ fn record(
             score.highest = score.current.max(score.highest);
             pipe.scored = true;
 
-            audio_event.write(AudioEvent::new(&audio_assets.score, false));
+            audio_message.write(AudioMessage::new(&audio_assets.score, false));
         }
     }
 }

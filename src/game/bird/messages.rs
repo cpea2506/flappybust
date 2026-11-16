@@ -1,7 +1,7 @@
 use bevy::prelude::Message;
 
 #[derive(Default, Message)]
-pub struct DeathEvent;
+pub struct DeathMessage;
 
 #[derive(Default, Message)]
 pub struct InTheHeaven;

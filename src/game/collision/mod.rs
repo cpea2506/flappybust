@@ -2,9 +2,9 @@ automod::dir!("src/game/collision");
 
 use super::{
     AudioAssets,
-    audio::events::AudioEvent,
+    audio::messages::AudioMessage,
     base::components::Base,
-    bird::{components::Bird, events::DeathEvent},
+    bird::{components::Bird, messages::DeathMessage},
     pipe::components::Pipe,
 };
 use crate::GameState;
@@ -13,7 +13,7 @@ use bevy::{
     shape::{Aabb2d, IntersectsVolume},
     transform::TransformSystems,
 };
-use events::CollisionEvent;
+use messages::CollisionMessage;
 
 /// Collision logic.
 pub struct CollisionPlugin;
@@ -22,7 +22,7 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         // Run after all `Update` movement so collisions use this frame's positions,
         // but before transforms propagate so landing on the base renders this frame.
-        app.add_message::<CollisionEvent>().add_systems(
+        app.add_message::<CollisionMessage>().add_systems(
             PostUpdate,
             (
                 check_collision
@@ -41,8 +41,8 @@ fn check_collision(
     pipes: Query<&Transform, (With<Pipe>, Without<Bird>)>,
     bases: Query<&Base, (Without<Pipe>, Without<Bird>)>,
     game_state: Res<State<GameState>>,
-    mut collision_event: MessageWriter<CollisionEvent>,
-    mut death_event: MessageWriter<DeathEvent>,
+    mut collision_message: MessageWriter<CollisionMessage>,
+    mut death_message: MessageWriter<DeathMessage>,
 ) {
     // There are two bases (for animating purpose) but we only need to take one
     // because bird only collides with the top of any base.
@@ -56,8 +56,8 @@ fn check_collision(
         // this is for bird to lay on the ground
         bird_transform.translation.y = base.collider_pos + Bird::HEIGHT / 2.0;
 
-        death_event.write_default();
-        collision_event.write_default();
+        death_message.write_default();
+        collision_message.write_default();
     }
 
     // Check pipe collision only on playing state
@@ -72,7 +72,7 @@ fn check_collision(
         if pipes.iter().any(|pipe| {
             bird_box.intersects(&Aabb2d::new(pipe.translation.truncate(), pipe_half_size))
         }) {
-            collision_event.write_default();
+            collision_message.write_default();
         }
     }
 }
@@ -80,16 +80,16 @@ fn check_collision(
 fn on_collision(
     mut next_state: ResMut<NextState<GameState>>,
     audio_assets: Res<AudioAssets>,
-    mut audio_event: MessageWriter<AudioEvent>,
-    collision_event: MessageReader<CollisionEvent>,
+    mut audio_message: MessageWriter<AudioMessage>,
+    collision_message: MessageReader<CollisionMessage>,
 ) {
-    if collision_event.is_empty() {
+    if collision_message.is_empty() {
         return;
     }
 
-    audio_event.write_batch(vec![
-        AudioEvent::new(&audio_assets.die, false),
-        AudioEvent::new(&audio_assets.hit, false),
+    audio_message.write_batch(vec![
+        AudioMessage::new(&audio_assets.die, false),
+        AudioMessage::new(&audio_assets.hit, false),
     ]);
 
     next_state.set(GameState::Over);

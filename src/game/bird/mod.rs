@@ -1,13 +1,13 @@
 automod::dir!(pub "src/game/bird");
 
 use super::{
-    AudioAssets, GameState, ImageAssets, audio::events::AudioEvent, base::components::Base,
-    game_over::events::MedalDisplayed,
+    AudioAssets, GameState, ImageAssets, audio::messages::AudioMessage, base::components::Base,
+    game_over::messages::MedalDisplayed,
 };
 use bevy::prelude::*;
 use components::*;
-use events::*;
 use flappybust::{despawn, frames};
+use messages::*;
 use rand::random_range;
 
 /// Bird logic.
@@ -15,7 +15,7 @@ pub struct BirdPlugin;
 
 impl Plugin for BirdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<DeathEvent>()
+        app.add_message::<DeathMessage>()
             .add_systems(OnEnter(GameState::Ready), spawn)
             .add_systems(
                 Update,
@@ -81,19 +81,19 @@ fn bird_soul_spawn(
 fn bird_soul_fly(
     time: Res<Time>,
     bird_soul: Single<(&mut Transform, &mut Visibility), With<BirdSoul>>,
-    mut audio_event: MessageWriter<AudioEvent>,
+    mut audio_message: MessageWriter<AudioMessage>,
     audio_assets: Res<AudioAssets>,
-    medal_event: MessageReader<MedalDisplayed>,
+    medal_message: MessageReader<MedalDisplayed>,
     mut in_heaven: MessageWriter<InTheHeaven>,
 ) {
-    if medal_event.is_empty() {
+    if medal_message.is_empty() {
         return;
     }
 
     let (mut transform, mut visibility) = bird_soul.into_inner();
 
     if visibility.set_if_neq(Visibility::Visible) {
-        audio_event.write(AudioEvent::new(&audio_assets.heaven, false));
+        audio_message.write(AudioMessage::new(&audio_assets.heaven, false));
     }
 
     transform.translation.y += frames(&time);
@@ -106,7 +106,7 @@ fn bird_soul_fly(
 fn fall(
     time: Res<Time>,
     bird: Single<(&mut Bird, &mut Transform)>,
-    death_event: MessageReader<DeathEvent>,
+    death_message: MessageReader<DeathMessage>,
 ) {
     let (mut bird, mut bird_transform) = bird.into_inner();
     let frames = frames(&time);
@@ -117,7 +117,7 @@ fn fall(
 
     // Don't try to fall if bird has been already dead,
     // just lay on the ground.
-    if !death_event.is_empty() {
+    if !death_message.is_empty() {
         return;
     }
 
@@ -133,13 +133,13 @@ fn fly(
     buttons: Res<ButtonInput<MouseButton>>,
     touches: Res<Touches>,
     audio_assets: Res<AudioAssets>,
-    mut audio_event: MessageWriter<AudioEvent>,
+    mut audio_message: MessageWriter<AudioMessage>,
 ) {
     if keys.just_pressed(KeyCode::Space)
         || buttons.just_pressed(MouseButton::Left)
         || touches.any_just_pressed()
     {
-        audio_event.write(AudioEvent::new(&audio_assets.wing, false));
+        audio_message.write(AudioMessage::new(&audio_assets.wing, false));
 
         bird.velocity = Bird::DEFAULT_VELOCITY;
         bird.rotation = 25f32.to_radians();
@@ -149,7 +149,7 @@ fn fly(
         || buttons.just_released(MouseButton::Left)
         || touches.any_just_released()
     {
-        audio_event.write(AudioEvent::new(&audio_assets.swoosh, false));
+        audio_message.write(AudioMessage::new(&audio_assets.swoosh, false));
     }
 }
 

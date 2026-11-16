@@ -11,7 +11,7 @@ mod ready_message;
 mod score;
 
 use crate::GameState;
-use audio::{AudioPlugin, components::AmbientMusic, events::AudioEvent};
+use audio::{AudioPlugin, components::AmbientMusic, messages::AudioMessage};
 use background::BackgroundPlugin;
 use base::BasePlugin;
 use bevy::prelude::*;
@@ -68,8 +68,15 @@ fn stop_all_songs(audio_sinks: Query<&AudioSink>) {
     }
 }
 
-fn play_ambient_music(mut audio_event: MessageWriter<AudioEvent>, audio_assets: Res<AudioAssets>) {
-    audio_event.write(AudioEvent::new_with_volume(&audio_assets.theme, true, 0.2));
+fn play_ambient_music(
+    mut audio_message: MessageWriter<AudioMessage>,
+    audio_assets: Res<AudioAssets>,
+) {
+    audio_message.write(AudioMessage::new_with_volume(
+        &audio_assets.theme,
+        true,
+        0.2,
+    ));
 }
 
 fn start_game(

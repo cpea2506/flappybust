@@ -2,16 +2,16 @@ automod::dir!(pub "src/game/game_over");
 
 use super::{
     AudioAssets, ImageAssets,
-    audio::events::AudioEvent,
-    bird::events::{DeathEvent, InTheHeaven},
+    audio::messages::AudioMessage,
+    bird::messages::{DeathMessage, InTheHeaven},
     score::components::Score,
 };
 use crate::GameState;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use components::*;
-use events::*;
 use flappybust::{despawn, frames};
+use messages::*;
 
 /// Game over logic.
 pub struct GameOverPlugin;
@@ -71,20 +71,20 @@ fn spawn_game_over(mut commands: Commands, image_assets: Res<ImageAssets>) {
 fn display_restart_btn(
     mut visibility: Single<&mut Visibility, With<RestartButton>>,
     in_the_heaven: MessageReader<InTheHeaven>,
-    mut restart_btn_event: MessageWriter<RestartButtonDisplayed>,
+    mut restart_btn_message: MessageWriter<RestartButtonDisplayed>,
 ) {
     if in_the_heaven.is_empty() {
         return;
     }
 
     visibility.set_if_neq(Visibility::Visible);
-    restart_btn_event.write_default();
+    restart_btn_message.write_default();
 }
 
 fn bounce_game_over_text(
     time: Res<Time>,
     game_over_text: Single<(&mut Transform, &mut GameOverText)>,
-    mut game_over_text_event: MessageWriter<GameOverTextDisplayed>,
+    mut game_over_text_message: MessageWriter<GameOverTextDisplayed>,
 ) {
     let (mut transform, mut game_over_text) = game_over_text.into_inner();
 
@@ -101,14 +101,14 @@ fn bounce_game_over_text(
         }
 
         transform.translation.y = 156f32;
-        game_over_text_event.write_default();
+        game_over_text_message.write_default();
     }
 }
 
 fn move_scoreboard_up(
     time: Res<Time>,
     scoreboard: Single<(&mut Transform, &mut Scoreboard)>,
-    mut scoreboard_event: MessageWriter<ScoreboardDisplayed>,
+    mut scoreboard_message: MessageWriter<ScoreboardDisplayed>,
 ) {
     let (mut transform, mut scoreboard) = scoreboard.into_inner();
 
@@ -120,7 +120,7 @@ fn move_scoreboard_up(
         (transform.translation.y + scoreboard.velocity * frames).clamp(-199f32, 57f32);
 
     if transform.translation.y == 57f32 {
-        scoreboard_event.write_default();
+        scoreboard_message.write_default();
     }
 }
 
@@ -146,14 +146,14 @@ fn scale_medal(
     time: Res<Time>,
     audio_assets: Res<AudioAssets>,
     medal: Option<Single<(&mut Transform, &mut Visibility), With<Medal>>>,
-    mut audio_event: MessageWriter<AudioEvent>,
-    mut medal_event: MessageWriter<MedalDisplayed>,
+    mut audio_message: MessageWriter<AudioMessage>,
+    mut medal_message: MessageWriter<MedalDisplayed>,
     game_over_text_displayed: MessageReader<GameOverTextDisplayed>,
-    death_event: MessageReader<DeathEvent>,
+    death_message: MessageReader<DeathMessage>,
     scoreboard_displayed: MessageReader<ScoreboardDisplayed>,
 ) {
     if scoreboard_displayed.is_empty()
-        || death_event.is_empty()
+        || death_message.is_empty()
         || game_over_text_displayed.is_empty()
     {
         return;
@@ -161,7 +161,7 @@ fn scale_medal(
 
     // No medal for low scores.
     let Some(medal) = medal else {
-        medal_event.write_default();
+        medal_message.write_default();
         return;
     };
     let (mut transform, mut visibility) = medal.into_inner();
@@ -170,7 +170,7 @@ fn scale_medal(
 
     // Reach the final end position.
     if transform.scale.x <= 1f32 {
-        medal_event.write_default();
+        medal_message.write_default();
         return;
     }
 
@@ -179,7 +179,7 @@ fn scale_medal(
     transform.scale = Vec3::new(scale, scale, 1f32);
 
     if scale == 1f32 {
-        audio_event.write(AudioEvent::new(&audio_assets.ding, false));
+        audio_message.write(AudioMessage::new(&audio_assets.ding, false));
     }
 }
 
