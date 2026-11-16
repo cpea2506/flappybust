@@ -2,7 +2,7 @@ automod::dir!(pub "src/game/bird");
 
 use super::{
     AudioAssets, GameState, ImageAssets, audio::messages::AudioMessage, base::components::Base,
-    game_over::messages::MedalDisplayed,
+    game_over::messages::MedalDisplayed, layer,
 };
 use bevy::prelude::*;
 use components::*;
@@ -46,13 +46,13 @@ fn spawn(mut commands: Commands, image_assets: Res<ImageAssets>) {
         &image_assets.yellow_birds,
     ];
     let animation_frames = birds[random_range(0..birds.len())].clone();
-    let bird = Bird::new(-53f32, 9f32);
+    let bird = Bird::default();
 
     commands.spawn((
         bird,
         Sprite::from_image(animation_frames[0].clone()),
         Transform::from_translation(bird.translation),
-        FlapAnimation::new(0.12, animation_frames),
+        FlapAnimation::new(Bird::FLAP_FRAME_SECS, animation_frames),
         BouncingAnimation::default(),
     ));
 }
@@ -67,7 +67,7 @@ fn bird_soul_spawn(
     let translation = Vec3::new(
         bird.translation.x,
         base.collider_pos + Bird::HEIGHT / 2.0,
-        0.5,
+        layer::BIRD_SOUL,
     );
 
     commands.spawn((
@@ -98,7 +98,7 @@ fn bird_soul_fly(
 
     transform.translation.y += frames(&time);
 
-    if transform.translation.y >= 267f32 {
+    if transform.translation.y >= BirdSoul::HEAVEN_Y {
         in_heaven.write_default();
     }
 }
@@ -111,9 +111,8 @@ fn fall(
     let (mut bird, mut bird_transform) = bird.into_inner();
     let frames = frames(&time);
 
-    // Rotate down at min -90deg and rotate up at max 25deg.
-    bird.rotation =
-        (bird.rotation - 40f32.recip() * frames).clamp(-90f32.to_radians(), 25f32.to_radians());
+    bird.rotation = (bird.rotation - Bird::ROTATION_SPEED * frames)
+        .clamp(Bird::MIN_ROTATION, Bird::MAX_ROTATION);
 
     // Don't try to fall if bird has been already dead,
     // just lay on the ground.
@@ -142,7 +141,7 @@ fn fly(
         audio_message.write(AudioMessage::new(&audio_assets.wing, false));
 
         bird.velocity = Bird::DEFAULT_VELOCITY;
-        bird.rotation = 25f32.to_radians();
+        bird.rotation = Bird::MAX_ROTATION;
     }
 
     if keys.just_released(KeyCode::Space)
@@ -167,8 +166,9 @@ fn flap(time: Res<Time>, bird: Single<(&mut FlapAnimation, &mut Sprite), With<Bi
 fn bounce_vertical(time: Res<Time>, bird: Single<(&mut Transform, &mut BouncingAnimation, &Bird)>) {
     let (mut transform, mut bouncing_animation, bird) = bird.into_inner();
 
-    bouncing_animation.phase += 0.16 * frames(&time);
+    bouncing_animation.phase += BouncingAnimation::SPEED * frames(&time);
 
     // Set the position from the phase instead of accumulating steps, so it never drifts.
-    transform.translation.y = bird.translation.y + (1f32 - bouncing_animation.phase.cos()) / 0.16;
+    transform.translation.y =
+        bird.translation.y + (1f32 - bouncing_animation.phase.cos()) / BouncingAnimation::SPEED;
 }

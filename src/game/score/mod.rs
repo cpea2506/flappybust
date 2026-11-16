@@ -1,5 +1,6 @@
 automod::dir!(pub "src/game/score");
 
+use super::layer;
 use super::{
     AudioAssets, FontAssets, GameState, audio::messages::AudioMessage, bird::components::Bird,
     game_over::messages::ScoreboardDisplayed, pipe::components::Pipe,
@@ -8,6 +9,15 @@ use crate::SCREEN_HEIGHT;
 use bevy::{camera::visibility::NoFrustumCulling, prelude::*, sprite::Anchor};
 use components::*;
 use flappybust::despawn;
+
+/// Bevy 0.15 text renders 1.2x larger, so font sizes are scaled down to keep the old size.
+const TEXT_SCALE: f32 = 1.2;
+const CURRENT_SCORE_FONT_SIZE: f32 = 64f32 / TEXT_SCALE;
+const SCOREBOARD_FONT_SIZE: f32 = 40f32 / TEXT_SCALE;
+/// Right edge of the scoreboard scores, aligned with the "SCORE" and "BEST" labels.
+const SCOREBOARD_SCORE_RIGHT: f32 = 100f32;
+const SCOREBOARD_CURRENT_Y: f32 = 65.5;
+const SCOREBOARD_BEST_Y: f32 = 16f32;
 
 pub struct ScorePlugin;
 
@@ -39,15 +49,14 @@ fn spawn_current_score(
 
     commands.spawn((
         Text2d::new(score.current.to_string()),
-        // Bevy 0.15 text renders 1.2x larger, so scale down to keep the old size.
         TextFont {
             font: font_assets.teko_bold.clone().into(),
-            font_size: FontSize::Px(64f32 / 1.2),
+            font_size: FontSize::Px(CURRENT_SCORE_FONT_SIZE),
             ..default()
         },
         TextLayout::justify(Justify::Center),
         Anchor::TOP_CENTER,
-        Transform::from_xyz(0f32, SCREEN_HEIGHT / 2.0, 0.2),
+        Transform::from_xyz(0f32, SCREEN_HEIGHT / 2.0, layer::HUD),
         // Frustum culling wrongly hides text whose top sits on the screen edge,
         // and this text is always on screen anyway.
         NoFrustumCulling,
@@ -78,17 +87,20 @@ fn display_scoreboard_score(
 
     let text_font = TextFont {
         font: font_assets.teko_bold.clone().into(),
-        font_size: FontSize::Px(40f32 / 1.2),
+        font_size: FontSize::Px(SCOREBOARD_FONT_SIZE),
         ..default()
     };
 
     // Right-aligned to the "SCORE" and "BEST" labels.
-    for (value, y) in [(score.current, 65.5f32), (score.highest, 16f32)] {
+    for (value, y) in [
+        (score.current, SCOREBOARD_CURRENT_Y),
+        (score.highest, SCOREBOARD_BEST_Y),
+    ] {
         commands.spawn((
             Text2d::new(value.to_string()),
             text_font.clone(),
             Anchor::CENTER_RIGHT,
-            Transform::from_xyz(100f32, y, 0.3),
+            Transform::from_xyz(SCOREBOARD_SCORE_RIGHT, y, layer::SCOREBOARD_SCORE),
             ScoreboardScore,
         ));
     }

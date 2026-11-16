@@ -1,3 +1,4 @@
+use super::super::layer;
 use bevy::prelude::*;
 
 #[derive(Component, Default)]
@@ -15,7 +16,7 @@ impl Base {
 
     pub fn new(x: f32, y: f32, secondary: bool) -> Self {
         Base {
-            translation: Vec3::new(x, y, 0.4),
+            translation: Vec3::new(x, y, layer::BASE),
             secondary,
             collider_pos: y + Self::HEIGHT / 2.0,
         }

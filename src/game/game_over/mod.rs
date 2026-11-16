@@ -4,6 +4,7 @@ use super::{
     AudioAssets, ImageAssets,
     audio::messages::AudioMessage,
     bird::messages::{DeathMessage, InTheHeaven},
+    layer,
     score::components::Score,
 };
 use crate::GameState;
@@ -50,20 +51,20 @@ impl Plugin for GameOverPlugin {
 fn spawn_game_over(mut commands: Commands, image_assets: Res<ImageAssets>) {
     commands.spawn((
         Sprite::from_image(image_assets.game_over.clone()),
-        Transform::from_xyz(0f32, 351f32, 0.2),
+        Transform::from_xyz(0f32, GameOverText::START_Y, layer::HUD),
         GameOverText::default(),
     ));
 
     commands.spawn((
         Sprite::from_image(image_assets.scoreboard.clone()),
-        Transform::from_xyz(0f32, -199f32, 0.2),
+        Transform::from_xyz(0f32, Scoreboard::START_Y, layer::HUD),
         Scoreboard::default(),
     ));
 
     commands.spawn((
         Sprite::from_image(image_assets.restart_btn.clone()),
         Visibility::Hidden,
-        Transform::from_xyz(0f32, -35f32, 0.2),
+        Transform::from_xyz(0f32, RestartButton::Y, layer::HUD),
         RestartButton,
     ));
 }
@@ -93,14 +94,14 @@ fn bounce_game_over_text(
     game_over_text.velocity += game_over_text.gravity * frames;
     transform.translation.y -= game_over_text.velocity * frames;
 
-    if transform.translation.y < 156f32 {
+    if transform.translation.y < GameOverText::REST_Y {
         if game_over_text.bounce {
-            game_over_text.velocity *= -0.73;
+            game_over_text.velocity *= -GameOverText::BOUNCINESS;
             game_over_text.bounce = false;
             return;
         }
 
-        transform.translation.y = 156f32;
+        transform.translation.y = GameOverText::REST_Y;
         game_over_text_message.write_default();
     }
 }
@@ -116,10 +117,10 @@ fn move_scoreboard_up(
 
     scoreboard.velocity += scoreboard.gravity * frames;
 
-    transform.translation.y =
-        (transform.translation.y + scoreboard.velocity * frames).clamp(-199f32, 57f32);
+    transform.translation.y = (transform.translation.y + scoreboard.velocity * frames)
+        .clamp(Scoreboard::START_Y, Scoreboard::END_Y);
 
-    if transform.translation.y == 57f32 {
+    if transform.translation.y == Scoreboard::END_Y {
         scoreboard_message.write_default();
     }
 }
@@ -135,7 +136,8 @@ fn spawn_medal(mut commands: Commands, score: Res<Score>, image_assets: Res<Imag
 
     commands.spawn((
         Sprite::from_image(image.clone()),
-        Transform::from_xyz(-65f32, 47f32, 0.4).with_scale(Vec3::new(25f32, 25f32, 1f32)),
+        Transform::from_translation(Medal::POSITION.extend(layer::MEDAL))
+            .with_scale(Vec2::splat(Medal::START_SCALE).extend(1f32)),
         Visibility::Hidden,
         Medal,
     ));
@@ -175,7 +177,7 @@ fn scale_medal(
     }
 
     // Shrink both xy back to the original size.
-    let scale = (transform.scale.x - 2f32 * frames(&time)).max(1f32);
+    let scale = (transform.scale.x - Medal::SHRINK_SPEED * frames(&time)).max(1f32);
     transform.scale = Vec3::new(scale, scale, 1f32);
 
     if scale == 1f32 {

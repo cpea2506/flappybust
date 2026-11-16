@@ -1,4 +1,6 @@
+use super::super::layer;
 use bevy::prelude::*;
+use std::ops::Range;
 use rand::random_range;
 
 #[derive(Component)]
@@ -18,10 +20,12 @@ impl Pipe {
     pub(super) const SPACING: f32 = 144f32;
     /// Pairs alive at once: enough to span the screen plus a pipe, so respawns start off screen.
     pub(super) const PAIRS: usize = 3;
+    /// Range of the lower pipe's center y, which places the gap.
+    const LOWER_Y: Range<f32> = -225f32..-84f32;
 
     /// Spawn a lower and an upper pipe at `x` with a random gap height.
     pub(super) fn spawn_pair(commands: &mut Commands, texture: &Handle<Image>, x: f32) {
-        let y = random_range(-225f32..-84f32);
+        let y = random_range(Self::LOWER_Y);
 
         for (flip_y, y) in [(false, y), (true, y + Self::GAP + Self::HEIGHT)] {
             commands.spawn((
@@ -30,7 +34,7 @@ impl Pipe {
                     flip_y,
                     ..default()
                 },
-                Transform::from_xyz(x, y, 0.1),
+                Transform::from_xyz(x, y, layer::PIPE),
                 Pipe {
                     flip_y,
                     scored: false,

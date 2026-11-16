@@ -25,6 +25,22 @@ use ready_message::ReadyMessagePlugin;
 pub use resources::*;
 use score::ScorePlugin;
 
+/// Draw order (z) of every sprite and text, back to front.
+mod layer {
+    pub const BACKGROUND: f32 = 0.0;
+    pub const PIPE: f32 = 0.1;
+    pub const READY_MESSAGE: f32 = 0.1;
+    /// Current score, game over text, scoreboard and restart button.
+    pub const HUD: f32 = 0.2;
+    pub const BIRD: f32 = 0.3;
+    pub const SCOREBOARD_SCORE: f32 = 0.3;
+    pub const BASE: f32 = 0.4;
+    pub const MEDAL: f32 = 0.4;
+    pub const BIRD_SOUL: f32 = 0.5;
+}
+
+const AMBIENT_VOLUME: f32 = 0.2;
+
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
@@ -75,7 +91,7 @@ fn play_ambient_music(
     audio_message.write(AudioMessage::new_with_volume(
         &audio_assets.theme,
         true,
-        0.2,
+        AMBIENT_VOLUME,
     ));
 }
 

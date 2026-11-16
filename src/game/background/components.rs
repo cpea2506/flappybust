@@ -1,4 +1,5 @@
 use crate::GAME_SPEED;
+use super::super::layer;
 use bevy::prelude::*;
 
 #[derive(Component, Default, Clone, Copy)]
@@ -13,7 +14,7 @@ impl Background {
 
     pub fn new(x: f32, y: f32, secondary: bool) -> Self {
         Background {
-            translation: Vec3 { x, y, z: 0f32 },
+            translation: Vec3::new(x, y, layer::BACKGROUND),
             secondary,
         }
     }
