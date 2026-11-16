@@ -11,3 +11,7 @@ bevy_asset_loader = { version = "0.28.1", features = [
   "2d",
   "standard_dynamic_assets",
 ] }
+
+# `rand` needs a browser randomness source on the web build.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
