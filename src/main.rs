@@ -58,9 +58,6 @@ fn main() {
     .add_plugins(GamePlugin)
     .add_systems(Startup, setup_camera);
 
-    #[cfg(not(target_arch = "wasm32"))]
-    app.add_systems(Update, close_on_esc);
-
     #[cfg(target_arch = "wasm32")]
     app.add_systems(Last, smooth_frame_time);
 
@@ -69,22 +66,6 @@ fn main() {
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
-}
-
-/// Close the focused window on Escape.
-///
-/// Not on the web, where closing the window only freezes the game on the page.
-#[cfg(not(target_arch = "wasm32"))]
-fn close_on_esc(
-    mut commands: Commands,
-    windows: Query<(Entity, &Window)>,
-    input: Res<ButtonInput<KeyCode>>,
-) {
-    for (entity, window) in &windows {
-        if window.focused && input.just_pressed(KeyCode::Escape) {
-            commands.entity(entity).despawn();
-        }
-    }
 }
 
 /// Feed Bevy the average of recent frame times instead of the raw ones.
