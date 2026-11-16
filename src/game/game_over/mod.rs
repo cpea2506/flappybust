@@ -149,10 +149,9 @@ fn spawn_restart_btn(mut commands: Commands, image_assets: Res<ImageAssets>) {
             Pickable::default(),
             DespawnOnExit(GameState::Over),
         ))
-        // Left click or touch, like the restart press it replaces.
         .observe(
-            |press: On<PointerPress>, next_state: ResMut<NextState<GameState>>| {
-                if press.button == PointerButton::Primary {
+            |click: On<PointerClick>, next_state: ResMut<NextState<GameState>>| {
+                if click.button == PointerButton::Primary {
                     restart_game(next_state);
                 }
             },
