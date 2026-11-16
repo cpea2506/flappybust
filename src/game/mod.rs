@@ -4,7 +4,6 @@ mod audio;
 mod background;
 mod base;
 mod bird;
-mod collision;
 mod game_over;
 mod pipe;
 mod ready_message;
@@ -17,7 +16,6 @@ use base::BasePlugin;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bird::BirdPlugin;
-use collision::CollisionPlugin;
 use flappybust::despawn;
 use game_over::GameOverPlugin;
 use pipe::PipePlugin;
@@ -63,7 +61,6 @@ impl Plugin for GamePlugin {
                 BasePlugin,
                 BirdPlugin,
                 PipePlugin,
-                CollisionPlugin,
                 ScorePlugin,
                 GameOverPlugin,
             ))

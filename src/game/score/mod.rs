@@ -3,12 +3,11 @@ automod::dir!(pub "src/game/score");
 use super::layer;
 use super::{
     AudioAssets, FontAssets, GameState, audio::messages::AudioMessage, bird::components::Bird,
-    game_over::messages::ScoreboardDisplayed, pipe::components::Pipe,
+    pipe::components::Pipe,
 };
-use crate::SCREEN_HEIGHT;
+use crate::{GameOverPhase, SCREEN_HEIGHT};
 use bevy::{camera::visibility::NoFrustumCulling, prelude::*, sprite::Anchor};
 use components::*;
-use flappybust::despawn;
 
 /// Bevy 0.15 text renders 1.2x larger, so font sizes are scaled down to keep the old size.
 const TEXT_SCALE: f32 = 1.2;
@@ -27,13 +26,9 @@ impl Plugin for ScorePlugin {
             .add_systems(OnEnter(GameState::Playing), spawn_current_score)
             .add_systems(
                 Update,
-                (
-                    (record, display_current_score).run_if(in_state(GameState::Playing)),
-                    display_scoreboard_score.run_if(in_state(GameState::Over)),
-                ),
+                (record, display_current_score).run_if(in_state(GameState::Playing)),
             )
-            .add_systems(OnEnter(GameState::Over), despawn::<CurrentScore>)
-            .add_systems(OnExit(GameState::Over), despawn::<ScoreboardScore>);
+            .add_systems(OnEnter(GameOverPhase::Medal), display_scoreboard_score);
     }
 }
 
@@ -61,6 +56,7 @@ fn spawn_current_score(
         // and this text is always on screen anyway.
         NoFrustumCulling,
         CurrentScore,
+        DespawnOnExit(GameState::Playing),
     ));
 
     commands.insert_resource(score);
@@ -77,14 +73,7 @@ fn display_scoreboard_score(
     mut commands: Commands,
     score: Res<Score>,
     font_assets: Res<FontAssets>,
-    scoreboard_displayed: MessageReader<ScoreboardDisplayed>,
-    spawned: Query<(), With<ScoreboardScore>>,
 ) {
-    // The scoreboard reports itself displayed every frame, so only spawn once.
-    if scoreboard_displayed.is_empty() || !spawned.is_empty() {
-        return;
-    }
-
     let text_font = TextFont {
         font: font_assets.teko_bold.clone().into(),
         font_size: FontSize::Px(SCOREBOARD_FONT_SIZE),
@@ -102,6 +91,7 @@ fn display_scoreboard_score(
             Anchor::CENTER_RIGHT,
             Transform::from_xyz(SCOREBOARD_SCORE_RIGHT, y, layer::SCOREBOARD_SCORE),
             ScoreboardScore,
+            DespawnOnExit(GameState::Over),
         ));
     }
 }

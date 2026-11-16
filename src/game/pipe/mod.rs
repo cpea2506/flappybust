@@ -4,7 +4,7 @@ use super::{DateTime, ImageAssets};
 use crate::{GAME_SPEED, GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use components::Pipe;
-use flappybust::{despawn, frames};
+use flappybust::frames;
 
 // A respawned pair must start off screen.
 const _: () = assert!(Pipe::PAIRS as f32 * Pipe::SPACING >= SCREEN_WIDTH + Pipe::WIDTH);
@@ -15,8 +15,7 @@ pub struct PipePlugin;
 impl Plugin for PipePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn)
-            .add_systems(Update, moving.run_if(in_state(GameState::Playing)))
-            .add_systems(OnExit(GameState::Over), despawn::<Pipe>);
+            .add_systems(Update, moving.run_if(in_state(GameState::Playing)));
     }
 }
 

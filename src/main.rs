@@ -18,6 +18,33 @@ pub enum GameState {
     Over,
 }
 
+/// Steps of the game over screen, in order.
+#[derive(SubStates, Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[source(GameState = GameState::Over)]
+pub enum GameOverPhase {
+    /// Game over text drops in and the scoreboard rises.
+    #[default]
+    Board,
+    /// Scores appear and the medal, if earned, shrinks into place.
+    Medal,
+    /// The bird's soul flies up to heaven.
+    Soul,
+    /// The restart button waits for input.
+    Restart,
+}
+
+/// From the first flap until restarting, whether the bird is alive or dead.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct InRound;
+
+impl ComputedStates for InRound {
+    type SourceStates = GameState;
+
+    fn compute(state: GameState) -> Option<Self> {
+        matches!(state, GameState::Playing | GameState::Over).then_some(InRound)
+    }
+}
+
 fn main() {
     let mut app = App::new();
 
@@ -38,6 +65,8 @@ fn main() {
             }),
     )
     .init_state::<GameState>()
+    .add_computed_state::<InRound>()
+    .add_sub_state::<GameOverPhase>()
     .add_plugins(GamePlugin)
     .add_systems(Startup, setup_camera);
 
