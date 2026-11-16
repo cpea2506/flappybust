@@ -11,7 +11,7 @@ mod ready_message;
 mod score;
 
 use crate::GameState;
-use audio::{components::AmbientMusic, events::AudioEvent, AudioPlugin};
+use audio::{AudioPlugin, components::AmbientMusic, events::AudioEvent};
 use background::BackgroundPlugin;
 use base::BasePlugin;
 use bevy::prelude::*;

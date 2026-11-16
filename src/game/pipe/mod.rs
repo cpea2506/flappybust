@@ -4,7 +4,7 @@ use super::{DateTime, ImageAssets};
 use crate::{GameState, SCREEN_WIDTH};
 use bevy::prelude::*;
 use components::Pipe;
-use flappybust::{despawn, frames, BasicMath};
+use flappybust::{BasicMath, despawn, frames};
 use itertools::Itertools;
 
 /// Pipe logic.

@@ -1,16 +1,16 @@
 automod::dir!(pub "src/game/game_over");
 
 use super::{
+    AudioAssets, ImageAssets,
     audio::events::AudioEvent,
     bird::events::{DeathEvent, InTheHeaven},
     score::components::Score,
-    AudioAssets, ImageAssets,
 };
 use crate::GameState;
 use bevy::prelude::*;
 use components::*;
 use events::*;
-use flappybust::{despawn, frames, Switcher};
+use flappybust::{Switcher, despawn, frames};
 
 /// Game over logic.
 pub struct GameOverPlugin;

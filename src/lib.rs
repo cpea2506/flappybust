@@ -64,11 +64,7 @@ impl BasicMath for Vec2 {
 
 /// Replace the cumbersome original short-hand if-else
 pub macro ternary($condition:expr, $then:expr, $else:expr) {
-    if $condition {
-        $then
-    } else {
-        $else
-    }
+    if $condition { $then } else { $else }
 }
 
 /// Time since last frame, measured in 60 FPS frames (`1.0` at 60 FPS, `0.5` at 120 FPS).

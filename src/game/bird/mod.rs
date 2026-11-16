@@ -1,13 +1,13 @@
 automod::dir!(pub "src/game/bird");
 
 use super::{
-    audio::events::AudioEvent, base::components::Base, game_over::events::MedalDisplayed,
-    AudioAssets, GameState, ImageAssets,
+    AudioAssets, GameState, ImageAssets, audio::events::AudioEvent, base::components::Base,
+    game_over::events::MedalDisplayed,
 };
 use bevy::prelude::*;
 use components::*;
 use events::*;
-use flappybust::{despawn, frames, BasicMath, Switcher};
+use flappybust::{BasicMath, Switcher, despawn, frames};
 use rand::random;
 
 /// Bird logic.

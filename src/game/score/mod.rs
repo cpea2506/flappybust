@@ -1,13 +1,13 @@
 automod::dir!(pub "src/game/score");
 
 use super::{
-    audio::events::AudioEvent, bird::components::Bird, game_over::events::ScoreboardDisplayed,
-    pipe::components::Pipe, AudioAssets, FontAssets, GameState,
+    AudioAssets, FontAssets, GameState, audio::events::AudioEvent, bird::components::Bird,
+    game_over::events::ScoreboardDisplayed, pipe::components::Pipe,
 };
 use crate::SCREEN_HEIGHT;
 use bevy::{prelude::*, sprite::Anchor::TopCenter};
 use components::*;
-use flappybust::{despawn, BasicMath, Switcher};
+use flappybust::{BasicMath, Switcher, despawn};
 use itertools::Itertools;
 
 pub struct ScorePlugin;

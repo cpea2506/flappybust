@@ -1,13 +1,11 @@
-#![feature(let_chains)]
-
 mod game;
 
 use bevy::{
     asset::AssetMetaCheck,
     prelude::*,
-    window::{close_on_esc, PrimaryWindow},
+    window::{PrimaryWindow, close_on_esc},
 };
-use game::{game_over::events::RestartButtonDisplayed, GamePlugin};
+use game::{GamePlugin, game_over::events::RestartButtonDisplayed};
 
 const SCREEN_WIDTH: f32 = 288f32;
 const SCREEN_HEIGHT: f32 = 512f32;
@@ -79,14 +77,14 @@ fn restart_game(
         next_state.set(GameState::Ready);
     }
 
-    if !mouse.just_pressed(MouseButton::Left) {
-        return;
-    }
-
-    // The cursor must be inside restart btn area.
-    if let Some(cursor) = window.single().cursor_position() {
-        if cursor.y > 273f32 && cursor.y < 310f32 && cursor.x > 90f32 && cursor.x < 200f32 {
-            next_state.set(GameState::Ready);
-        }
+    if mouse.just_pressed(MouseButton::Left)
+        && let Some(cursor) = window.single().cursor_position()
+        // The cursor must be inside restart btn area.
+        && cursor.y > 273f32
+        && cursor.y < 310f32
+        && cursor.x > 90f32
+        && cursor.x < 200f32
+    {
+        next_state.set(GameState::Ready);
     }
 }

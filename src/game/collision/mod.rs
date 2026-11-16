@@ -1,11 +1,11 @@
 automod::dir!("src/game/collision");
 
 use super::{
+    AudioAssets,
     audio::events::AudioEvent,
     base::components::Base,
     bird::{components::Bird, events::DeathEvent},
     pipe::components::Pipe,
-    AudioAssets,
 };
 use crate::GameState;
 use bevy::{

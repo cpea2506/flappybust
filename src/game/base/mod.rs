@@ -4,7 +4,7 @@ use super::ImageAssets;
 use crate::{GameState, SCREEN_HEIGHT};
 use bevy::prelude::*;
 use components::Base;
-use flappybust::{frames, BasicMath};
+use flappybust::{BasicMath, frames};
 
 pub struct BasePlugin;
 
